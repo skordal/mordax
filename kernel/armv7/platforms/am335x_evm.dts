@@ -22,13 +22,30 @@
 		reg = <0x80000000 0x10000000>; /* 256 Mb */
 	};
 
+	intc: intc@0x48200000 {
+		compatible = "ti,omap3-intc";
+		reg = <0x48200000 4096>;
+	};
+
 	uart0: uart@0x44e09000 {
 		compatible = "national,16c750";
+		reg = <0x44e09000 4096>;
+		interrupts = <72>;
+
+		mordax,uart-speed = <115200>;
+		mordax,uart-parity = "none";
+	};
+
+	timer0: timer@0x44e05000 {
+		compatible = "ti,omap3-timer";
+		reg = <0x44e05000 4096>;
+		interrupts = <66>;
 	};
 
 	mordax {
 		debug-interface = <&uart0>;
-		/* More details needed here. */
+		interrupt-controller = <&intc>;
+		scheduler-timer = <&timer0>;
 	};
 };
 
