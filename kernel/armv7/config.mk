@@ -26,6 +26,7 @@ ASSEMBLER_FILES += \
 	armv7/memcpy.S \
 	armv7/uidiv.S
 SOURCE_FILES += \
+	armv7/abort.c \
 	armv7/mmu.c \
 	armv7/stack_setup.c
 
