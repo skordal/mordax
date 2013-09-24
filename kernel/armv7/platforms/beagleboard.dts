@@ -34,6 +34,9 @@
 
 		mordax,uart-speed = <115200>;
 		mordax,uart-parity = "none";
+
+		/* Sleep mode does not work on the Beagleboard-Xm for some reason. */
+		mordax,uart-sleepmode = "disabled";
 	};
 
 	timer0: timer@0x48318000 {
