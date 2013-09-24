@@ -11,6 +11,7 @@
 
 #include "debug.h"
 #include "drivers/debug/debug.h"
+#include "drivers/interrupts/intc.h"
 
 // Kernel device tree:
 static struct dt * kernel_dt;
