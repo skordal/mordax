@@ -22,11 +22,6 @@ bool intc_omap3_initialize(struct dt_node * device_node)
 	}
 
 	memory = mmu_map_device((physical_ptr) memory_info[0], (size_t) memory_info[1]);
-	debug_printf("Interrupt controller memory area is at %x physical, %x virtual, length %d\n", 
-		memory_info[0], memory, memory_info[1]);
-
-	debug_printf("Omap3 interrupt controller, revision %d.%d\n", (memory[INTC_OMAP3_REVISION] >> 4) & 0xf,
-		(memory[INTC_OMAP3_REVISION] & 0xf));
 
 	// Reset the interrupt controller:
 	memory[INTC_OMAP3_SYSCONFIG] |= 1 << INTC_OMAP3_SYSCONFIG_SOFTRESET;
