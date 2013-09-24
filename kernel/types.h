@@ -5,6 +5,7 @@
 #ifndef MORDAX_TYPES_H
 #define MORDAX_TYPES_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /** Object size type. */
