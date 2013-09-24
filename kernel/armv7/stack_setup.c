@@ -32,7 +32,6 @@ void stacks_initialize(void)
 		"cps %[sys_mode]\n\t"
 		:: [svc_mode] "I" (PROCESSOR_MODE_SVC), [sys_mode] "I" (PROCESSOR_MODE_SYS),
 		[stack_address] "r" (stack_address));
-	debug_printf("\tSVC stack address: %x\n", stack_address);
 
 	// Allocate and set up the abort stack:
 	stack_address -= CONFIG_SYSTEM_STACK_SIZE - CONFIG_PAGE_SIZE;
@@ -45,7 +44,6 @@ void stacks_initialize(void)
 		"cps %[sys_mode]\n\t"
 		:: [abt_mode] "I" (PROCESSOR_MODE_ABT), [sys_mode] "I" (PROCESSOR_MODE_SYS),
 		[stack_address] "r" (stack_address));
-	debug_printf("\tAbort stack address: %x\n", stack_address);
 
 	// Allocate and set up the undefined instruction mode stack:
 	stack_address -= CONFIG_SYSTEM_STACK_SIZE - CONFIG_PAGE_SIZE;
@@ -58,7 +56,6 @@ void stacks_initialize(void)
 		"cps %[sys_mode]\n\t"
 		:: [und_mode] "I" (PROCESSOR_MODE_UND), [sys_mode] "I" (PROCESSOR_MODE_SYS),
 		[stack_address] "r" (stack_address));
-	debug_printf("\tUndefined mode stack address: %x\n", stack_address);
 
 	// Allocate and set up the IRQ mode stack:
 	stack_address -= CONFIG_SYSTEM_STACK_SIZE - CONFIG_PAGE_SIZE;
@@ -71,7 +68,6 @@ void stacks_initialize(void)
 		"cps %[sys_mode]\n\t"
 		:: [irq_mode] "I" (PROCESSOR_MODE_IRQ), [sys_mode] "I" (PROCESSOR_MODE_SYS),
 		[stack_address] "r" (stack_address));
-	debug_printf("\tIRQ stack address: %x\n", stack_address);
 
 	// Allocate and set up the FIQ mode stack:
 	stack_address -= CONFIG_SYSTEM_STACK_SIZE - CONFIG_PAGE_SIZE;
@@ -84,6 +80,5 @@ void stacks_initialize(void)
 		"cps %[sys_mode]\n\t"
 		:: [fiq_mode] "I" (PROCESSOR_MODE_FIQ), [sys_mode] "I" (PROCESSOR_MODE_SYS),
 		[stack_address] "r" (stack_address));
-	debug_printf("\tFIQ stack address: %x\n", stack_address);
 }
 
