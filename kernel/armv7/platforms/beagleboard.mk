@@ -9,3 +9,10 @@ DTS_FILE ?= armv7/platforms/beagleboard.dts
 TARGET_CFLAGS  += -mcpu=cortex-a8
 TARGET_ASFLAGS += -mcpu=cortex-a8
 
+# Extra configuration for early debugging support:
+CONFIG += -DCONFIG_EARLY_DEBUG -DCONFIG_EARLY_DEBUG_ADDRESS=0x49020000
+
+# Early debugging support:
+ASSEMBLER_FILES += \
+	armv7/platforms/16c750-early.S
+

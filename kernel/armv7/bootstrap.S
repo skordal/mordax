@@ -116,9 +116,12 @@ bootstrap_init_mmu:
 	addlo r5, r5, #1024 * 1024
 	blo 1b	
 
+#ifdef CONFIG_EARLY_DEBUG
 	@ Create a mapping for the UART, for testing:
-	ldr r4, =0x49000000 | MMU_SECTION_TYPE | MMU_SECTION_DEVICE | MMU_SECTION_RW_NA | 1 << MMU_SECTION_XN
+	ldr r4, =(CONFIG_EARLY_DEBUG_ADDRESS & -(1024*1024)) \
+		| MMU_SECTION_TYPE | MMU_SECTION_DEVICE | MMU_SECTION_RW_NA | 1 << MMU_SECTION_XN
 	str r4, [r6, r4, lsr #18]
+#endif
 
 	mcr p15, 0, r2, c8, c7, 0	@ Clear the TLB
 	mcr p15, 0, r6, c2, c0, 0	@ Set TTBR0

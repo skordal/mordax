@@ -10,6 +10,12 @@
 
 static struct debug_driver * driver;
 
+#ifdef CONFIG_EARLY_DEBUG
+// Prints a character to the debug terminal, used before a driver has been set
+// by debug_set_output_driver:
+extern void early_putc(char c);
+#endif
+
 // Prints a character to the debug terminal:
 static void debug_putc(char c);
 // Prints a signed decimal to the debug terminal:
@@ -66,17 +72,15 @@ void debug_printf(const char * format, ...)
 
 static void debug_putc(char c)
 {
-	// TODO: remove this hard-coded address:
-	static volatile char * uart = (volatile char *) 0x49020000;
-
 	if(c == '\n')
 		debug_putc('\r');
 
 	if(driver != 0)
 		driver->putc(c);
 	else {
-		while(!(uart[0x14] & (1 << 5)));
-		*uart = c;
+#ifdef CONFIG_EARLY_DEBUG
+		early_putc(c);
+#endif
 	}
 }
 
