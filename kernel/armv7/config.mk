@@ -24,7 +24,8 @@ ASSEMBLER_FILES += \
 	armv7/endian.S \
 	armv7/interrupts.S \
 	armv7/log2.S \
-	armv7/memcpy.S
+	armv7/memcpy.S \
+	armv7/uidiv.S
 SOURCE_FILES += \
 	armv7/mmu.c \
 	armv7/stack_setup.c
