@@ -87,8 +87,6 @@ void * mmu_map(physical_ptr physical, void * virtual, size_t size,
 	enum mmu_memory_type type, enum mmu_memory_permissions permissions)
 {
 	size = (size + 4095) & -4096;
-	debug_printf("Going to map %p (size: %d) to %p\n", physical, size, virtual);
-
 	for(unsigned i = 0; i < size >> 12; ++i)
 	{
 		mmu_map_page((physical_ptr) ((uint32_t) physical + (i << 12)),
@@ -110,8 +108,6 @@ void * mmu_map_device(physical_ptr physical, size_t size)
 void mmu_unmap(void * virtual, size_t size)
 {
 	size = (size + 4095) & -4096;
-	debug_printf("Unmapping %p (length: %x)\n", virtual, size);
-
 	for(int i = 0; i < size >> 12; ++i)
 		mmu_unmap_page((void *) ((uint32_t) virtual + (i << 12)));
 }
