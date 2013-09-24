@@ -12,7 +12,7 @@ The following tools are currently required to build Mordax:
 * `mkimage` from the U-Boot project.
 * Various Unix utilities which you probably have anyway. Try to build the project and you will find out what you are missing.
 
-When you have the required tools, run `make` from the toplevel folder. You have to specify a target using the `TARGET` makefile variable on the command line. The only working target at the moment is `TARGET=armv7-beagleboard`. Another target that will be supported is `TARGET=armv7-am335x_evm`, but it may not work yet.
+When you have the required tools, run `make` from the toplevel folder. You have to specify a target using the `TARGET` makefile variable on the command line. The supported targets are `armv7-beagleboard` for the Beagleboard-Xm and `armv7-am335x_evm` for Texas Instruments' AM335x Evaluation Board.
 
 The Microkernel
 ---------------
