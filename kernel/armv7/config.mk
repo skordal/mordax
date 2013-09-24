@@ -20,7 +20,6 @@ TARGET_LDSCRIPT := armv7/mordax.ld
 # Target dependent source files:
 ASSEMBLER_FILES += \
 	armv7/bootstrap.S \
-	armv7/context.S \
 	armv7/endian.S \
 	armv7/interrupts.S \
 	armv7/log2.S \
