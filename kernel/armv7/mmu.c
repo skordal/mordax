@@ -41,8 +41,6 @@ static inline uint32_t small_page_permission_bits(enum mmu_memory_permissions pe
 void mmu_initialize(void)
 {
 	extern void * text_start, * data_start, * kernel_address, * load_address;
-	debug_printf("Initializing MMU...\n");
-
 	kernel_lookup_table = rbtree_new();
 
 	// Create the initial page table:

@@ -34,7 +34,7 @@ struct debug_driver * debug_driver_instantiate(struct dt_node * device_node)
 	{
 		if(str_equals(drivers[i].compatible, compatible))
 		{
-			debug_printf("Found driver compatible with %s\n", compatible);
+			debug_printf("Debug driver: %s\n", compatible);
 			drivers[i].driver->initialize(device_node);
 			return drivers[i].driver;
 		}

@@ -45,27 +45,25 @@ void kernel_main(physical_ptr * device_tree, size_t dt_size)
 	debug_printf("finished\n");
 
 	// Map and parse the FDT passed from uboot and create a more accessible local version of it:
-	debug_printf("Parsing FDT... ");
+	debug_printf("Parsing device tree... ");
 	struct fdt * uboot_fdt = mmu_map(device_tree, device_tree, dt_size, MMU_TYPE_DATA, MMU_PERM_RW_NA);
 	kernel_dt = dt_parse(uboot_fdt);
 	if(kernel_dt == 0)
 		kernel_panic("could not parse the device tree");
 	mmu_unmap(device_tree, dt_size);
+	debug_printf("finished\n");
 
-	debug_printf("Device tree:\n");
-	dt_print(kernel_dt);
-
-	debug_printf("Hardware: %s (compatible: %s)\n",
+	debug_printf("\nHardware: %s (compatible: %s)\n\n",
 		dt_get_string_property(kernel_dt->root, "model"),
 		dt_get_string_property(kernel_dt->root, "compatible"));
 
 	// Set up physical memory management:
-	debug_printf("Memory:\n");
+	debug_printf("Memory: ");
 	struct dt_node * memory_node = dt_get_node_by_path(kernel_dt, "/memory");
 	uint32_t memory_data[2];
 	if(!dt_get_array32_property(memory_node, "reg", memory_data, 2))
 		kernel_panic("the 'memory' node is missing the 'reg' property");
-	debug_printf("\t%d bytes @ %x\n", memory_data[1], memory_data[0]);
+	debug_printf("%d Mb starting at %x\n", memory_data[1] >> 20, memory_data[0]);
 	mm_add_physical((physical_ptr) memory_data[0], (size_t) memory_data[1], MM_ZONE_NORMAL);
 	
 	// Reserve the memory currently in use from being allocated:
@@ -91,9 +89,13 @@ void kernel_main(physical_ptr * device_tree, size_t dt_size)
 
 void kernel_panic(const char * message)
 {
+	// Better hope the debugging functions still work :-)
+
+	debug_printf("\n\n\n");
 	debug_printf("*** KERNEL PANIC\n");
-	debug_printf("*** ERROR: %s\n\n", message);
+	debug_printf("*** ERROR: %s\n", message);
 	debug_printf("*** An unrecoverable error has occured. Reset the board and try again.\n");
+	debug_printf("\n\n\n");
 
 	while(1) asm volatile("cpsid aif\n\twfi\n\t");
 }
