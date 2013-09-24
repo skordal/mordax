@@ -1,0 +1,12 @@
+TEX remapping in the Mordax Microkernel
+=======================================
+
+0. Executable code (write-through, no write-allocate)
+1. Read-only data (write-through, no write-allocate)
+2. Read-write data (write-back, write-allocate)
+3. Stack (write-back, write-allocate)
+4. Strongly ordered memory
+5. Device memory ( = uncached, for now)
+6. Implementation defined, unused
+7. Uncached memory
+

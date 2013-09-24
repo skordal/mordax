@@ -1,0 +1,64 @@
+/*     Mordax Microkernel device tree file for the Beagleboard XM      */
+/*   (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>   */
+/* Report bugs and issues on <http://github.com/skordal/mordax/issues> */
+
+/dts-v1/;
+
+/ {
+	description = "Mordax Microkernel OS";
+	#address-cells = <1>;
+
+	images {
+		kernel@1 {
+			description = "Mordax Microkernel";
+			data = /incbin/("./mordax.bin.gz");
+			type = "kernel";
+			arch = "arm";
+			os = "linux";
+			compression = "gzip";
+			load = <0x81000000>;
+			entry = <0x81000000>;
+
+			hash@1 {
+				algo = "sha1";
+			};
+		};
+/*
+		ramdisk@1 {
+			description = "Initial process file";
+			data = /incbin/("./testfile.txt");
+			type = "ramdisk";
+			arch = "arm";
+			os = "linux";
+			compression = "none";
+
+			hash@1 {
+				algo = "sha1";
+			};
+		};
+*/
+		fdt@1 {
+			description = "Device tree file";
+			data = /incbin/("./mordax.dtb");
+			type = "flat_dt";
+			arch = "arm";
+			compression = "none";
+
+			hash@1 {
+				algo = "crc32";
+			};
+		};
+	};
+
+	configurations {
+		default = "config@1";
+
+		config@1 {
+			description = "Mordax Microkernel OS";
+			kernel = "kernel@1";
+			/* ramdisk = "ramdisk@1"; */
+			fdt = "fdt@1";
+		};
+	};
+};
+

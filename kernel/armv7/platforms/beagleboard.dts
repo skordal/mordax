@@ -1,0 +1,51 @@
+/*     Mordax Microkernel device tree file for the Beagleboard xM      */
+/*   (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>   */
+/* Report bugs and issues on <http://github.com/skordal/mordax/issues> */
+
+/dts-v1/;
+
+/ {
+	compatible = "ti,beagleboard-xm";
+	model = "Beagleboard xM";
+
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	cpus {
+		cpu@0 {
+			compatible = "arm,cortex-a8";
+		};
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x80000000 0x20000000>; /* 512 Mb */
+	};
+
+	intc: intc@0x48200000 {
+		compatible = "ti,omap3-intc";
+		reg = <0x48200000 4096>;
+	};
+
+	uart2: uart@0x49020000 {
+		compatible = "national,16c750";
+		reg = <0x49020000 4096>;
+		interrupts = <74>;
+
+		mordax,uart-speed = <115200>;
+		mordax,uart-parity = "none";
+	};
+
+	timer0: timer@0x48318000 {
+		compatible = "ti,omap3-timer";
+		reg = <0x48318000 4096>;
+		interrupts = <37>;
+	};
+
+	mordax {
+		interrupt-controller = <&intc>;
+		debug-interface = <&uart2>;
+		scheduler-timer = <&timer0>;
+	};
+};
+

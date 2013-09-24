@@ -1,0 +1,12 @@
+# Ignore built binary files:
+*.o
+*.itb
+*.dtb
+*.elf
+*.bin
+*.bin.gz
+
+# Ignore vim temporary files:
+*.swo
+*.swp
+

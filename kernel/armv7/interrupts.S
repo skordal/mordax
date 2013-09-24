@@ -1,0 +1,96 @@
+@ The Mordax Microkernel
+@ (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
+@ Report bugs and issues on <http://github.com/skordal/mordax/issues>
+.syntax unified
+.arm
+
+#include "registers.h"
+
+.section .text
+
+.global interrupts_initialize
+interrupts_initialize:
+	ldr r0, =kernel_address
+	mcr p15, 0, r0, c12, c0, 0
+	mov pc, lr
+.ltorg
+
+@ Stores the current execution context, to allow for context switching
+@ in interrupt handlers:
+.macro store_context
+	stmdb sp, {r0 - r14}^	@ User-mode registers
+	push {lr}		@ Exception return address
+	mrs r0, spsr
+	push {r0}		@ SPSR
+.endm
+
+@ Restores the current execution context:
+.macro restore_context
+	pop {r0}		@ SPSR
+	msr spsr, r0
+	pop {lr}		@ Exception return address
+	ldmia sp, {r0 - r14}^	@ User-mode registers
+.endm
+
+@ Undefined instruction exception handler.
+.global int_undefined_instruction
+.type int_undefined_instruction, %function
+int_undefined_instruction:
+	store_context
+
+	restore_context
+	movs pc, lr
+
+@ Software interrupt exception handler.
+.global int_software_interrupt
+.type int_software_interrupt, %function
+int_software_interrupt:
+	store_context
+
+	mov r0, sp
+	bl abort_handler
+
+	restore_context
+	movs pc, lr
+
+@ Prefetch abort exception handler.
+.global int_prefetch_abort
+.type int_prefetch_abort, %function
+int_prefetch_abort:
+	store_context
+
+	mov r0, sp
+	bl abort_handler
+
+	restore_context
+	subs pc, lr, #4
+
+@ Data abort exception handler.
+.global int_data_abort
+.type int_data_abort, %function
+int_data_abort:
+	store_context
+
+	mov r0, sp
+	bl abort_handler
+
+	restore_context
+	subs pc, lr, #4
+
+@ IRQ exception handler.
+.global int_irq
+.type int_irq, %function
+int_irq:
+	store_context			@ Store the execution context to the top of the stack
+
+	bl irq_interrupt_handler	@ Call the interrupt handler written in C
+
+	restore_context			@ Restore the execution context from the top of the stack
+	subs pc, lr, #4
+
+@ FIQ exception handler.
+.global int_fiq
+.type int_fiq, %function
+int_fiq:
+	subs pc, lr, #4
+

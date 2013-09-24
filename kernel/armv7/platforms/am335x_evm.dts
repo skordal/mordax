@@ -1,0 +1,36 @@
+/*       Mordax Microkernel device tree file for the AM335x EVM        */
+/*   (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>   */
+/* Report bugs and issues on <http://github.com/skordal/mordax/issues> */
+
+/dts-v1/;
+
+/ {
+	compatible = "ti,am335x-evm";
+	model = "AM335x Evaluation Module";
+
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	cpus {
+		cpu@0 {
+			compatible = "arm,cortex-a8";
+		};
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x80000000 0x10000000>; /* 256 Mb */
+	};
+
+	uart0: uart@0x44e09000 {
+		compatible = "national,16c750";
+	};
+
+	mordax {
+		debug-interface = <&uart0>;
+		/* More details needed here. */
+	};
+};
+
+
+
