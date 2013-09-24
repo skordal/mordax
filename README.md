@@ -27,7 +27,7 @@ The microkernel is a work in progress and is changing rapidly.
 * Device tree parsing and usage.
 
 ### What does not work/What sort-of works
-* The red-black tree implementation probably does not work. Problems that pops up have been fixed by inserting more null checks into the insertion fixup function, so it is likely that the trees are unbalanced and wrong. Also, deletion is not supported, but required for the kernel's use of the trees. A new implementation is being written.
+* The red-black tree implementation probably does not work correctly. Problems that pop up have usually been fixed by inserting null pointer checks into the insertion fixup function, so it is likely that the trees are unbalanced and the colouring wrong. Also, deletion is not supported, yet it is required for the kernel's use of the trees. A new implementation is being written.
 * Adding more blocks of memory to the physical memory manager.
 * The 16c750 UART driver is incomplete.
 * The interrupt controller driver is incomplete.
