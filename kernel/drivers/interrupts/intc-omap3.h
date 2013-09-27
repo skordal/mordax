@@ -18,9 +18,9 @@
 #define INTC_OMAP3_PROTECTION	(0x4c >> 2)
 #define INTC_OMAP3_IDLE		(0x50 >> 2)
 
-#define INTC_OMAP3_MIR_CLEAR(n)	((0x088 + (n << 6)) >> 2)
-#define INTC_OMAP3_MIR_SET(n)	((0x08c + (n << 6)) >> 2)
-#define INTC_OMAP3_ILR(n)	((0x100 + (n << 2)) >> 2)
+#define INTC_OMAP3_MIR_CLEAR(n)	((0x088 + (n * 0x20)) >> 2)
+#define INTC_OMAP3_MIR_SET(n)	((0x08c + (n * 0x20)) >> 2)
+#define INTC_OMAP3_ILR(n)	((0x100 + (n *  0x4)) >> 2)
 
 #define INTC_OMAP3_SIR_IRQ_ACTIVEIRQ_MASK	0x7f
 

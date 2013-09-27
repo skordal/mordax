@@ -64,8 +64,8 @@ void intc_omap3_register_handler(unsigned irq, irq_handler_func handler)
 	irq_handlers[irq] = handler;
 
 	// Enable the specified IRQ:
-	int mir_register = irq >> 6;	
-	memory[INTC_OMAP3_MIR_SET(mir_register)] = (1 << (irq % 32));
+	int mir_register = irq >> 5;	
+	memory[INTC_OMAP3_MIR_CLEAR(mir_register)] = (1 << (irq % 32));
 }
 
 void intc_omap3_unregister_handler(unsigned irq)
@@ -75,7 +75,7 @@ void intc_omap3_unregister_handler(unsigned irq)
 	irq_handlers[irq] = 0;
 
 	// Disable the specified IRQ:
-	int mir_register = irq >> 6;	
-	memory[INTC_OMAP3_MIR_CLEAR(mir_register)] = (1 << (irq % 32));
+	int mir_register = irq >> 5;	
+	memory[INTC_OMAP3_MIR_SET(mir_register)] = (1 << (irq % 32));
 }
 
