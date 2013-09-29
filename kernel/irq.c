@@ -10,10 +10,10 @@
 static struct intc_driver * driver = 0;
 
 // IRQ handler function, called from the assembly interrupt handler:
-void irq_interrupt_handler(void)
+void irq_interrupt_handler(struct thread_context * context)
 {
 	debug_printf("IRQ received!\n");
-	driver->handle_irq();
+	driver->handle_irq(context);
 }
 
 void irq_set_intc_driver(struct intc_driver * d)

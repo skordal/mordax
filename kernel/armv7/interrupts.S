@@ -12,15 +12,16 @@
 interrupts_initialize:
 	ldr r0, =kernel_address
 	mcr p15, 0, r0, c12, c0, 0
+	cpsie if
 	mov pc, lr
 .ltorg
 
 @ Stores the current execution context, to allow for context switching
 @ in interrupt handlers:
 .macro store_context
+	stmdb sp, {r0 - r14}^	@ User-mode registers
 	sub sp, #15 * 4
-	stmia sp, {r0 - r14}^	@ User-mode registers
-	str lr, [sp, #-4]!	@ Exception return address
+	push {lr}		@ Exception return address
 	mrs r0, spsr
 	push {r0}		@ SPSR
 .endm
@@ -29,7 +30,7 @@ interrupts_initialize:
 .macro restore_context
 	pop {r0}		@ SPSR
 	msr spsr, r0
-	ldr lr, [sp], #4	@ Exception return address
+	pop {lr}		@ Exception return address
 	ldmia sp, {r0 - r14}^	@ User-mode registers
 	add sp, #15 * 4
 .endm
@@ -83,11 +84,16 @@ int_data_abort:
 .global int_irq
 .type int_irq, %function
 int_irq:
-	store_context			@ Store the execution context to the top of the stack
+	store_context
 
-	bl irq_interrupt_handler	@ Call the interrupt handler written in C
+	@ Pass a pointer to the stored context data to the handler function:
+	mov r0, sp
 
-	restore_context			@ Restore the execution context from the top of the stack
+	push {lr}
+	bl irq_interrupt_handler
+	pop {lr}
+
+	restore_context
 	subs pc, lr, #4
 
 @ FIQ exception handler.

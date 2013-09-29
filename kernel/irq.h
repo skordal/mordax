@@ -5,8 +5,10 @@
 #ifndef MORDAX_IRQ_H
 #define MORDAX_IRQ_H
 
+struct thread_context;
+
 /** IRQ handler function. */
-typedef void (*irq_handler_func)(unsigned irq);
+typedef void (*irq_handler_func)(struct thread_context * context, unsigned irq);
 
 // Driver structure forward-declaration:
 struct intc_driver;

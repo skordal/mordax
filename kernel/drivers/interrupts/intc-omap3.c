@@ -43,14 +43,13 @@ bool intc_omap3_initialize(struct dt_node * device_node)
 	return true;
 }
 
-void intc_omap3_handle_irq(void)
+void intc_omap3_handle_irq(struct thread_context * context)
 {
 	// Get the number of the IRQ to handle:
 	unsigned active_irq = memory[INTC_OMAP3_SIR_IRQ] & INTC_OMAP3_SIR_IRQ_ACTIVEIRQ_MASK;
-	debug_printf("Active IRQ: %d\n", active_irq);
 
 	// Call the IRQ handler:
-	irq_handlers[active_irq](active_irq);
+	irq_handlers[active_irq](context, active_irq);
 
 	// Reset interrupt generation:
 	memory[INTC_OMAP3_CONTROL] |= (1 << INTC_OMAP3_CONTROL_NEWIRQAGR);

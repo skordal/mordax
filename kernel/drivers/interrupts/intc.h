@@ -13,7 +13,7 @@
 typedef bool (*intc_driver_init_func)(struct dt_node * device_node);
 
 /** Function type for handling an IRQ interrupt. */
-typedef void (*intc_driver_handle_func)(void);
+typedef void (*intc_driver_handle_func)(struct thread_context * context);
 
 /** Function type for registering an IRQ handler. */
 typedef void (*intc_driver_register_func)(unsigned irq, irq_handler_func handler);
