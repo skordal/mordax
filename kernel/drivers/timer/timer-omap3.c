@@ -47,12 +47,6 @@ bool timer_omap3_initialize(struct dt_node * device_node)
 	// Register the interrupt handler (unmasks the interrupt):
 	irq_register(irq_number, timer_omap3_irq_handler);
 
-	timer_omap3_set_interval(1000000);
-	timer_omap3_start();
-
-	debug_printf("Waiting for timer interrupt...\n");
-	asm volatile("cpsie if\n\twfi\n\t");
-
 	return true;
 }
 
