@@ -23,6 +23,9 @@ struct rbtree * kernel_lookup_table;
 // Next device mapping address:
 void * next_device_address = (void *) 0xf0000000;
 
+// Stack for allocating page tables:
+struct mm_object_stack * pt_stack;
+
 // Maps one page of memory:
 static void * mmu_map_page(physical_ptr physical, void * virtual,
 	enum mmu_memory_type type, enum mmu_memory_permissions permissions);
@@ -43,8 +46,11 @@ void mmu_initialize(void)
 	extern void * text_start, * data_start, * kernel_address, * load_address;
 	kernel_lookup_table = rbtree_new();
 
+	// Create the page table stack:
+	pt_stack = mm_object_stack_create(1024, 1024, 16, 16);
+
 	// Create the initial page table:
-	uint32_t * page_table = mm_allocate(1024, 1024, MM_MEM_NORMAL);
+	uint32_t * page_table = mm_object_stack_allocate(pt_stack);
 	memclr(page_table, 1024);
 
 	// Map the kernel code section:
@@ -150,7 +156,7 @@ static void * mmu_map_page(physical_ptr physical, void * virtual,
 	if(page_table == 0)
 	{
 		// Allocate a new page table:
-		page_table = mm_allocate(1024, 1024, MM_MEM_NORMAL);
+		page_table = mm_object_stack_allocate(pt_stack);
 		memclr(page_table, 1024);
 		rbtree_insert(kernel_lookup_table, (uint32_t) mmu_virtual_to_physical(page_table),
 			page_table); // FIXME: kernel/user table
