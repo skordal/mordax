@@ -23,6 +23,7 @@ SOURCE_FILES += \
 	kernel.c \
 	mm.c \
 	rbtree.c \
+	stack.c \
 	utils.c
 
 # Include build configuration files for the drivers:
