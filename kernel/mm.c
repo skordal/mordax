@@ -4,6 +4,7 @@
 
 #include "debug.h"
 #include "mm.h"
+#include "stack.h"
 #include "utils.h"
 
 #ifndef CONFIG_PAGE_SIZE
@@ -40,6 +41,16 @@ struct memory_zone
 	physical_ptr start;
 	struct memory_zone * next;
 	uint8_t ** buddy_lists;
+};
+
+// Object stack:
+struct mm_object_stack
+{
+	size_t object_size;
+	unsigned object_alignment;
+	unsigned expand_elements;
+	unsigned available;
+	struct stack * object_stack;
 };
 
 // Imported from the linker script:
@@ -211,6 +222,58 @@ static struct memory_block * mm_split(struct memory_block * block, unsigned offs
 		return retval;
 	} else
 		return 0;
+}
+
+struct mm_object_stack * mm_object_stack_create(size_t object_size, unsigned alignment, unsigned number, unsigned expand)
+{
+	struct mm_object_stack * retval = mm_allocate(sizeof(struct mm_object_stack), MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	retval->object_size = object_size;
+	retval->object_alignment = alignment;
+	retval->expand_elements = expand;
+	retval->available = number;
+	retval->object_stack = stack_new();
+
+	// Add initial elements to the stack:
+	for(unsigned i = 0; i < number; ++i)
+		stack_push(retval->object_stack, mm_allocate(retval->object_size, retval->object_alignment, MM_MEM_NORMAL));
+	return retval;
+}
+
+void * mm_object_stack_allocate(struct mm_object_stack * s)
+{
+	void * retval = 0;
+	if(!stack_pop(s->object_stack, &retval))
+	{
+		mm_object_stack_expand(s);
+		stack_pop(s->object_stack, &retval);
+	}
+
+	--s->available;
+	return retval;
+}
+
+void mm_object_stack_free(struct mm_object_stack * s, void * object)
+{
+	stack_push(s->object_stack, object);
+	++s->available;
+}
+
+unsigned mm_object_stack_available(struct mm_object_stack * s)
+{
+	return s->available;
+}
+
+void mm_object_stack_expand(struct mm_object_stack * s)
+{
+	for(unsigned i = 0; i < s->expand_elements; ++i)
+		stack_push(s->object_stack, mm_allocate(s->object_size, s->object_alignment, MM_MEM_NORMAL));
+	s->available += s->expand_elements;
+}
+
+void mm_object_stack_destroy(struct mm_object_stack * s)
+{
+	stack_free(s->object_stack, mm_free);
+	mm_free(s);
 }
 
 void mm_add_physical(physical_ptr address, size_t size, unsigned int flags)

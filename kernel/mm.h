@@ -50,8 +50,67 @@ void * mm_allocate(size_t size, unsigned int alignment, unsigned int flags)
 void mm_free(void * area);
 
 /**
- * @}
+ * @defgroup mm_kernel_objstack Object Stack Functions
+ * Functions for maintaining stacks of preallocated objects.
+ *
+ * An object stack is a stack with preallocated blocks of memory of a specific
+ * size. This allows allocation of commonly used object types in O(1) time.
+ *
+ * When a stack is depleted, it is extended by a predefined number of elements.
+ * @{
  */
+
+/** Abstract object stack type. */
+struct mm_object_stack;
+
+/**
+ * Creates a new object stack.
+ * @param object_size size of the objects in the stack.
+ * @param alignment alignment of the objects in memory.
+ * @param number initial number of objects in a stack.
+ * @param expand number of objects to add to the stack when expanding.
+ * @return a pointer to the object stack.
+ */
+struct mm_object_stack * mm_object_stack_create(size_t object_size, unsigned alignment, unsigned number, unsigned expand);
+
+/**
+ * Allocates an element from an object stack.
+ * @param s the stack to allocate the object from.
+ * @return a pointer to the newly allocated object. The returned object is not
+ *         zero'ed or otherwise initialized.
+ */
+void * mm_object_stack_allocate(struct mm_object_stack * s);
+
+/**
+ * Frees an element previously allocated from an object stack.
+ * @param s the stack to free the object to.
+ * @param object the object to free.
+ */
+void mm_object_stack_free(struct mm_object_stack * s, void * object);
+
+/**
+ * Gets the current number of available objects in an object stack.
+ * @param s the stack.
+ * @return the number of available objects in the stack.
+ */
+unsigned mm_object_stack_available(struct mm_object_stack * s);
+
+/**
+ * Expand the object stack. This is normally done automatically when the stack
+ * is out of elements, but sometimes it can be beneficial to force this action.
+ * @param s the stack.
+ */
+void mm_object_stack_expand(struct mm_object_stack * s);
+
+/**
+ * Destroys an object stack and frees all elements in the stack.
+ * @param s the stack to free.
+ */
+void mm_object_stack_destroy(struct mm_object_stack * s);
+
+/** @} */
+
+/** @} */
 
 /**
  * @defgroup mm_physical Physical Memory Management Functions
