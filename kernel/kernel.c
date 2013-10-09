@@ -46,7 +46,7 @@ void kernel_main(physical_ptr * device_tree, size_t dt_size)
 
 	// Map and parse the FDT passed from uboot and create a more accessible local version of it:
 	debug_printf("Parsing device tree... ");
-	struct fdt * uboot_fdt = mmu_map(device_tree, device_tree, dt_size, MMU_TYPE_DATA, MMU_PERM_RW_NA);
+	struct fdt * uboot_fdt = mmu_map(device_tree, device_tree, dt_size, MMU_TYPE_DATA, MMU_PERM_RO_NA);
 	kernel_dt = dt_parse(uboot_fdt);
 	if(kernel_dt == 0)
 		kernel_panic("could not parse the device tree");
