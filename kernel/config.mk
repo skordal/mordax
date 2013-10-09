@@ -22,6 +22,7 @@ SOURCE_FILES += \
 	irq.c \
 	kernel.c \
 	mm.c \
+	queue.c \
 	rbtree.c \
 	stack.c \
 	utils.c
