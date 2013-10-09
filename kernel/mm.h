@@ -38,6 +38,7 @@ void print_blocks(void);
  * @param alignment alignment of the start of the memory area.
  * @param flags additional properties of the memory area.
  * @return the allocated memory area or `NULL` if no memory was available.
+ * @todo Support extending the kernel heap.
  */
 void * mm_allocate(size_t size, unsigned int alignment, unsigned int flags)
 	__attribute((malloc));

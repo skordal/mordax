@@ -23,15 +23,17 @@ The microkernel is a work in progress and is changing rapidly.
 
 * Initial boot code (though the initial stack allocation should probably be improved).
 * Physical memory management using a simple buddy allocator.
-* Virtual memory management for the kernel using a simple linked-list first-fit allocator (with O(n) for allocation = slow for many allocations).
+* Virtual memory management for the kernel using a simple linked-list first-fit allocator (with O(n) for allocation = quite slow).
 * Device tree parsing and usage.
 * Debug logging using an UART.
 * IRQs.
 * Timers.
+* Stacks (the data structure).
 
 ### What does not work/What sort-of works
 * The red-black tree implementation probably does not work correctly. Problems that pop up have usually been fixed by inserting null pointer checks into the insertion fixup function, so it is likely that the trees are unbalanced and the colouring wrong. Also, deletion is not supported, yet it is required for the kernel's use of the trees. A new implementation is being written.
 * Adding more blocks of memory to the physical memory manager.
+* Extending the kernel heap when neccessary.
 * Interrupt support is incomplete.
 * Abort handling is incomplete.
 
@@ -40,5 +42,6 @@ The microkernel is a work in progress and is changing rapidly.
 * A scheduler
 * IPC
 * Threads and processes
+* Locking and thread-safeness
 * Probably more exciting features!
 
