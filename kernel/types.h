@@ -14,6 +14,9 @@ typedef uint32_t size_t;
 /** Physical pointer type. */
 typedef void * physical_ptr;
 
+/** Process identitifer type. */
+typedef int32_t pid_t;
+
 /** 64-bit generic big endian type. */
 typedef uint64_t be64;
 /** 32-bit generic big endian type. */

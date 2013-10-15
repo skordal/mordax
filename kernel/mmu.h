@@ -36,17 +36,29 @@ enum mmu_memory_permissions
 };
 
 /** Translation table type. */
-struct mmu_translation_table
-{
-	void * translation_table;
-	struct rbtree * lookup_table;
-};
+struct mmu_translation_table;
 
 /** Initializes the MMU for kernel use. */
 void mmu_initialize(void);
 
 /**
- * Creates a memory mapping.
+ * Creates a translation table for application use.
+ * @return an empty translation table for application use.
+ */
+struct mmu_translation_table * mmu_create_translation_table(void);
+
+/**
+ * Sets the current application translation table. This is used during
+ * context switching to change translation tables.
+ * @param table the new translation table.
+ * @param pid the PID of the process.
+ */
+void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t pid);
+
+/**
+ * Creates a memory mapping. The address is mapped in either the userspace
+ * translation table or the kernel translation table based on whether the
+ * virtual address to map to is in userspace or kernelspace.
  * @param physical physical address of the memory to map. The physical address
  *                 is rounded down to a multiple of the page size.
  * @param virtual virtual address to map the memory to.

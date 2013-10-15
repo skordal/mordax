@@ -15,10 +15,20 @@
 
 #define pt_index(virtual) (((uint32_t) virtual & 0xfffff) >> 12)
 
+// Structure used for user translation tables:
+struct mmu_translation_table
+{
+	uint32_t table[2048];
+	struct rbtree * lookup_table;
+};
+
 // The kernel translation table:
 uint32_t kernel_translation_table[4096] __attribute((aligned(16*1024)));
 // Kernel page table physical->virtual lookup table:
 struct rbtree * kernel_lookup_table;
+
+// The current application translation table:
+struct mmu_translation_table * user_translation_table;
 
 // Next device mapping address:
 void * next_device_address = (void *) 0xf0000000;
@@ -40,6 +50,9 @@ static uint32_t * get_pt_address(uint32_t * translation_table, int index);
 static inline uint32_t small_page_type_bits(enum mmu_memory_type type);
 // Gets the permission bits for the specified small page permissions:
 static inline uint32_t small_page_permission_bits(enum mmu_memory_permissions permissions);
+
+// ASID counter:
+static uint8_t asid = 0;
 
 void mmu_initialize(void)
 {
@@ -85,6 +98,53 @@ void mmu_initialize(void)
 
 	// Finally clear the TLB so that all new mappings take effect:
 	asm volatile("mcr p15, 0, r0, c8, c7, 0\n\tisb\n\tdsb\n\t" ::: "memory");
+}
+
+struct mmu_translation_table * mmu_create_translation_table(void)
+{
+	struct mmu_translation_table * retval = mm_allocate(sizeof(struct mmu_translation_table), 8192, MM_MEM_NORMAL);
+
+	memclr(retval, sizeof(struct mmu_translation_table));
+	retval->lookup_table = rbtree_new();
+
+	return retval;
+}
+
+void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t pid)
+{
+	user_translation_table = table;
+	uint8_t current_asid = ++asid;
+
+	if(current_asid == 0)
+		; // TODO: invalidate TLB for all ASIDs.
+
+	// Switch TTBR0 to point to the new translation table:
+	asm volatile(
+		// Set the TTBCR.PD0 bit to 1, disabling translation using TTBR0:
+		"mrc p15, 0, ip, c2, c0, 2\n\t"
+		"orr ip, #(1 << 4)\n\t"
+		"mcr p15, 0, ip, c2, c0, 2\n\r"
+
+		// Change the CONTEXTIDR:
+		"mov ip, %[pid], lsl #8\n\t"
+		"orr ip, %[asid]\n\t"
+		"mcr p15, 0, ip, c13, c0, 1\n\t"
+
+		// Change the TTBR0 register:
+		"orr ip, %[table], #(0b10 << 3)|0b11\n\t"
+		"mcr p15, 0, ip, c2, c0, 0\n\t"
+		"isb\n\t"
+
+		// Clear the TTBCR.PD0 bit:
+		"mrc p15, 0, ip, c2, c0, 2\n\t"
+		"mvn v1, #(1 << 4)\n\t"
+		"and ip, ip, v1\n\t"
+		"mcr p15, 0, ip, c2, c0, 2\n\t"
+		:
+		: [asid] "r" (current_asid), [pid] "r" (pid), [table] "r" (table->table)
+		: "ip", "v1"
+	);
+
 }
 
 void * mmu_map(physical_ptr physical, void * virtual, size_t size,
@@ -138,15 +198,20 @@ physical_ptr mmu_virtual_to_physical(void * virtual)
 
 void * mmu_physical_to_virtual(physical_ptr physical)
 {
-	return rbtree_get_value(kernel_lookup_table, (uint32_t) physical); // FIXME: kernel/user table
+	if(rbtree_key_exists(kernel_lookup_table, (uint32_t) physical))
+		return rbtree_get_value(kernel_lookup_table, (uint32_t) physical);
+	else
+		return rbtree_get_value(user_translation_table->lookup_table, (uint32_t) physical);
 }
 
 static void * mmu_map_page(physical_ptr physical, void * virtual,
 	enum mmu_memory_type type, enum mmu_memory_permissions permissions)
 {
-//	uint32_t * table = (uint32_t) virtual >= MMU_KERNEL_SPLIT_ADDRESS ?
-//		kernel_translation_table : user_translation_table;
-	uint32_t * table = kernel_translation_table;
+	uint32_t * table;
+	if((uint32_t) virtual >= MMU_KERNEL_SPLIT_ADDRESS)
+		table = kernel_translation_table;
+	else
+		table = user_translation_table->table;
 	uint32_t * page_table = get_pt_address(table, (uint32_t) virtual >> 20);
 
 	// Round the physical (and virtual) addresses down:
@@ -158,30 +223,50 @@ static void * mmu_map_page(physical_ptr physical, void * virtual,
 		// Allocate a new page table:
 		page_table = mm_object_stack_allocate(pt_stack);
 		memclr(page_table, 1024);
-		rbtree_insert(kernel_lookup_table, (uint32_t) mmu_virtual_to_physical(page_table),
-			page_table); // FIXME: kernel/user table
+		if(table == kernel_translation_table)
+		{
+			rbtree_insert(kernel_lookup_table, (uint32_t) mmu_virtual_to_physical(page_table),
+				page_table);
+		} else {
+			rbtree_insert(user_translation_table->lookup_table,
+				(uint32_t) mmu_virtual_to_physical(page_table), page_table);
+		}
 		table[(uint32_t) virtual >> 20] = (uint32_t) mmu_virtual_to_physical(page_table)
 			| MMU_PAGE_TABLE_TYPE;
 	}
 
 	uint32_t entry = ((uint32_t) physical & MMU_SMALL_PAGE_BASE_MASK) | MMU_SMALL_PAGE_TYPE |
 		small_page_type_bits(type) | small_page_permission_bits(permissions);
+	if((uint32_t) virtual < MMU_KERNEL_SPLIT_ADDRESS)
+		entry |= MMU_SMALL_PAGE_NG; // Set the not-global bit for userspace pages.
+
 	page_table[((uint32_t) virtual & 0xfffff) >> 12] = entry;
 
 	// Insert the page into the lookup table:
-	rbtree_insert(kernel_lookup_table, (uint32_t) physical, virtual); // FIXME: kernel/user table
+	if(table == kernel_translation_table)
+		rbtree_insert(kernel_lookup_table, (uint32_t) physical, virtual);
+	else
+		rbtree_insert(user_translation_table->lookup_table, (uint32_t) physical, virtual);
 
 	return virtual;
 }
 
 static void mmu_unmap_page(void * virtual)
 {
-	uint32_t * table = kernel_translation_table;
+	uint32_t * table;
+	if((uint32_t) virtual >= MMU_KERNEL_SPLIT_ADDRESS)
+		table = kernel_translation_table;
+	else
+		table = user_translation_table->table;
+
 	uint32_t * page_table = get_pt_address(table, (uint32_t) virtual >> 20);
 
 	// Round the address down:
 	virtual = (void *) ((uint32_t) virtual & -4096);
-	rbtree_remove(kernel_lookup_table, (uint32_t) mmu_virtual_to_physical(virtual)); // FIXME: kernel/user table
+	if(table == kernel_translation_table)
+		rbtree_remove(kernel_lookup_table, (uint32_t) mmu_virtual_to_physical(virtual));
+	else
+		rbtree_remove(user_translation_table->lookup_table, (uint32_t) mmu_virtual_to_physical(virtual));
 
 	if(page_table != 0)
 		page_table[((uint32_t) virtual & 0xfffff) >> 12] = 0;

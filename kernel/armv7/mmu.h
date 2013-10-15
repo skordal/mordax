@@ -13,6 +13,7 @@
  * @{
  */
 
+/** Address of the split between kernelspace and userspace addresses. */
 #define MMU_KERNEL_SPLIT_ADDRESS	0x80000000U
 
 /**
