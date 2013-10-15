@@ -143,6 +143,8 @@ bootstrap_init_mmu:
 
 .section .text
 bootstrap_finished:
+	clrex
+
 	@ FIXME: Temporarily use the end of the mapped dataspace as stack.
 	ldr sp, =kernel_dataspace_end
 	ldr sp, [sp]
