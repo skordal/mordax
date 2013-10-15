@@ -43,6 +43,9 @@ void debug_printf(const char * format, ...)
 		{
 			switch(format[i + 1])
 			{
+				case 'c':
+					debug_putc(va_arg(arguments, int));
+					break;
 				case 'd':
 					debug_putd(va_arg(arguments, int));
 					break;
