@@ -33,6 +33,7 @@ struct rbtree * rbtree_new(void) __attribute((malloc));
 /**
  * Frees a red-black tree and all its nodes.
  * @param tree the tree to free.
+ * @todo Add callback for deleting the node data of each freed node.
  */
 void rbtree_free(struct rbtree * tree);
 
@@ -59,6 +60,14 @@ void * rbtree_remove(struct rbtree * tree, uint32_t key);
  * @return the data associated with the key, or 0 if the key was not found.
  */
 void * rbtree_get_value(struct rbtree * tree, uint32_t key);
+
+/**
+ * Checks if a key exists in a tree.
+ * @param tree the tree to search in.
+ * @param key the key to find.
+ * @return `true` if the key exists in the tree, `false` otherwise.
+ */
+bool rbtree_key_exists(struct rbtree * tree, uint32_t key);
 
 /** @} */
 

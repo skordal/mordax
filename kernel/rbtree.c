@@ -26,7 +26,6 @@ static void insertion_fixup(struct rbtree * tree, struct rbtree_node * n);
 static void left_rotate(struct rbtree * tree, struct rbtree_node * x);
 // Right rotates the tree at the specified node:
 static void right_rotate(struct rbtree * tree, struct rbtree_node * x);
-// Finds a node by its key:
 static struct rbtree_node * find_node(struct rbtree * tree, uint32_t key);
 
 struct rbtree * rbtree_new(void)
@@ -88,6 +87,14 @@ void * rbtree_get_value(struct rbtree * tree, uint32_t key)
 		return 0;
 	else
 		return n->data;
+}
+
+bool rbtree_key_exists(struct rbtree * tree, uint32_t key)
+{
+	if(find_node(tree, key) != 0)
+		return true;
+	else
+		return false;
 }
 
 // FIXME: The insertion_fixup function below has some serious issues.
