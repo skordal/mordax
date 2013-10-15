@@ -125,7 +125,7 @@ bootstrap_init_mmu:
 
 	mcr p15, 0, r2, c8, c7, 0	@ Clear the TLB
 	mcr p15, 0, r6, c2, c0, 0	@ Set TTBR0
-	mcr p15, 0, r6, c2, c0, 0	@ Set TTBR1
+	mcr p15, 0, r6, c2, c0, 1	@ Set TTBR1
 	mvn r4, #0
 	mcr p15, 0, r4, c3, c0, 0	@ Set domain permissions (full access)
 	mcr p15, 0, r2, c8, c7, 0	@ Clear the TLB
