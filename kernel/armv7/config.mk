@@ -22,6 +22,7 @@ ASSEMBLER_FILES += \
 	armv7/bootstrap.S \
 	armv7/endian.S \
 	armv7/interrupts.S \
+	armv7/lock.S \
 	armv7/log2.S \
 	armv7/memcpy.S \
 	armv7/uidiv.S
