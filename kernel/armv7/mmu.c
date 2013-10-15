@@ -20,6 +20,7 @@ struct mmu_translation_table
 {
 	uint32_t table[2048];
 	struct rbtree * lookup_table;
+	uint8_t asid;
 };
 
 // The kernel translation table:
@@ -96,8 +97,20 @@ void mmu_initialize(void)
 	for(unsigned i = 0; i < old_mapping_size >> 20; ++i)
 		kernel_translation_table[((uint32_t) &load_address >> 20) + i] = 0;
 
-	// Finally clear the TLB so that all new mappings take effect:
-	asm volatile("mcr p15, 0, r0, c8, c7, 0\n\tisb\n\tdsb\n\t" ::: "memory");
+	// Finish MMU initialization with some assembler code:
+	asm volatile(
+		// Set domain permissions:
+		"ldr ip, =0x55555555\n\t"
+		"mcr p15, 0, ip, c3, c0, 0\n\t"
+		// Set the TTBCR.N to 1 to use 8196 byte translation tables for userspace mappings:
+		"mov ip, #1\n\t"
+		"mcr p15, 0, ip, c2, c0, 2\n\t"
+		// Finally, clear the TLB so that all new mappings take effect:
+		"mcr p15, 0, ip, c8, c7, 0\n\t"
+		"isb\n\t"
+		"dsb\n\r"
+		::: "ip", "memory"
+	);
 }
 
 struct mmu_translation_table * mmu_create_translation_table(void)
@@ -106,6 +119,7 @@ struct mmu_translation_table * mmu_create_translation_table(void)
 
 	memclr(retval, sizeof(struct mmu_translation_table));
 	retval->lookup_table = rbtree_new();
+	retval->asid = ++asid; // TODO: check that the ASID is unused
 
 	return retval;
 }
@@ -113,10 +127,7 @@ struct mmu_translation_table * mmu_create_translation_table(void)
 void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t pid)
 {
 	user_translation_table = table;
-	uint8_t current_asid = ++asid;
-
-	if(current_asid == 0)
-		; // TODO: invalidate TLB for all ASIDs.
+	void * table_physical = mmu_virtual_to_physical(user_translation_table->table);
 
 	// Switch TTBR0 to point to the new translation table:
 	asm volatile(
@@ -124,27 +135,29 @@ void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t 
 		"mrc p15, 0, ip, c2, c0, 2\n\t"
 		"orr ip, #(1 << 4)\n\t"
 		"mcr p15, 0, ip, c2, c0, 2\n\r"
+		"isb\n\r"
 
 		// Change the CONTEXTIDR:
-		"mov ip, %[pid], lsl #8\n\t"
+		"lsl ip, %[pid], #8\n\t"
 		"orr ip, %[asid]\n\t"
 		"mcr p15, 0, ip, c13, c0, 1\n\t"
 
 		// Change the TTBR0 register:
-		"orr ip, %[table], #(0b10 << 3)|0b11\n\t"
-		"mcr p15, 0, ip, c2, c0, 0\n\t"
+		"mcr p15, 0, %[table], c2, c0, 0\n\t"
 		"isb\n\t"
 
 		// Clear the TTBCR.PD0 bit:
 		"mrc p15, 0, ip, c2, c0, 2\n\t"
 		"mvn v1, #(1 << 4)\n\t"
-		"and ip, ip, v1\n\t"
+		"and ip, v1\n\t"
 		"mcr p15, 0, ip, c2, c0, 2\n\t"
+		"dsb\n\t"
+		"isb\n\t"
 		:
-		: [asid] "r" (current_asid), [pid] "r" (pid), [table] "r" (table->table)
+		: [asid] "r" (user_translation_table->asid),
+			[pid] "r" (pid), [table] "r" (table_physical)
 		: "ip", "v1"
 	);
-
 }
 
 void * mmu_map(physical_ptr physical, void * virtual, size_t size,
