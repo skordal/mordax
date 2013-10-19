@@ -15,9 +15,10 @@
 /** Stored thread context structure. */
 struct thread_context
 {
-	uint32_t r[15];	//< Registers r0 - r14
-	uint32_t pc;	//< Exception return address
 	uint32_t spsr;	//< Stored status register
+	uint32_t pc;	//< Exception return address
+	uint32_t r[15];	//< Registers r0 - r14
+	uint32_t flags;	//< Flags, such as whether to store Neon context.
 } __attribute((packed));
 
 /** @} */

@@ -19,19 +19,17 @@ interrupts_initialize:
 @ Stores the current execution context, to allow for context switching
 @ in interrupt handlers:
 .macro store_context
-	stmdb sp, {r0 - r14}^	@ User-mode registers
 	sub sp, #15 * 4
-	push {lr}		@ Exception return address
+	stmia sp, {r0 - r14}^	@ Store user-mode registers
 	mrs r0, spsr
-	push {r0}		@ SPSR
+	stmdb sp!, {r0, lr}	@ Exception return address and SPSR
 .endm
 
 @ Restores the current execution context:
 .macro restore_context
-	pop {r0}		@ SPSR
+	ldmia sp!, {r0, lr}	@ Exception return address and SPSR
 	msr spsr, r0
-	pop {lr}		@ Exception return address
-	ldmia sp, {r0 - r14}^	@ User-mode registers
+	ldmia sp, {r0 - r14}^	@ Load user-mode registers
 	add sp, #15 * 4
 .endm
 
