@@ -7,161 +7,154 @@
 #include "rbtree.h"
 #include "utils.h"
 
-struct rbtree
-{
-	struct rbtree_node * root;
-};
+#define RBTREE_BLACK	0
+#define RBTREE_RED	1
 
 struct rbtree_node
 {
-	uint32_t key;
-	void * data;
-	struct rbtree_node * left, * right, * parent;
-	enum { RBTREE_RED = 0, RBTREE_BLACK } color;
+	int color;
+	void * key, * data;
+	struct rbtree_node * right, * left, * parent;
 };
 
-// Fixes up the tree after an insertion:
-static void insertion_fixup(struct rbtree * tree, struct rbtree_node * n);
-// Left rotates the tree at the specified node:
-static void left_rotate(struct rbtree * tree, struct rbtree_node * x);
-// Right rotates the tree at the specified node:
-static void right_rotate(struct rbtree * tree, struct rbtree_node * x);
-static struct rbtree_node * find_node(struct rbtree * tree, uint32_t key);
+struct rbtree
+{
+	rbtree_key_compare_func compare_key;
+	rbtree_key_free_func free_key;
+	rbtree_key_duplicate_func dup_key;
+	struct rbtree_node * nil, * root;
+};
 
-struct rbtree * rbtree_new(void)
+static void free_node_recursively(struct rbtree * tree, struct rbtree_node * node,
+	rbtree_data_free_func free_func);
+static void insert_fixup(struct rbtree * tree, struct rbtree_node * z);
+static void left_rotate(struct rbtree * tree, struct rbtree_node * node);
+static void right_rotate(struct rbtree * tree, struct rbtree_node * node);
+static void delete_fixup(struct rbtree * tree, struct rbtree_node * x);
+static void transplant(struct rbtree * tree, struct rbtree_node * u, struct rbtree_node * v);
+static struct rbtree_node * tree_minimum(struct rbtree * tree, struct rbtree_node * x);
+static struct rbtree_node * find_node(struct rbtree * tree, void * key);
+
+// Function used when no compare function is given:
+static int compare_pointer_values(void * a, void * b);
+
+struct rbtree * rbtree_new(rbtree_key_compare_func key_compare, rbtree_key_free_func key_free,
+	rbtree_key_duplicate_func key_dup)
 {
 	struct rbtree * retval = mm_allocate(sizeof(struct rbtree), MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
-	retval->root = 0;
+	retval->compare_key = key_compare ? key_compare : compare_pointer_values;
+	retval->free_key = key_free;
+	retval->dup_key = key_dup;
+
+	retval->nil = mm_allocate(sizeof(struct rbtree_node), MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	memclr(retval->nil, sizeof(struct rbtree_node));
+	retval->nil->color = RBTREE_BLACK;
+	retval->nil->left = retval->nil;
+	retval->nil->right = retval->nil;
+
+	retval->root = retval->nil;
+
 	return retval;
 }
 
-void rbtree_free(struct rbtree * tree)
+void rbtree_free(struct rbtree * tree, rbtree_data_free_func free_func)
 {
-	mm_free(tree);
-	// TODO: Free nodes.
+	if(tree->root != 0)
+		free_node_recursively(tree, tree->root, free_func);
+	mm_free(tree->nil);
 }
 
-void rbtree_insert(struct rbtree * tree, uint32_t key, void * data)
+static void free_node_recursively(struct rbtree * tree, struct rbtree_node * node,
+	rbtree_data_free_func free_func)
 {
-	struct rbtree_node * current = tree->root;
-	struct rbtree_node * parent = 0;
+	if(node->left != tree->nil)
+		free_node_recursively(tree, node->left, free_func);
+	if(node->right != tree->nil)
+		free_node_recursively(tree, node->right, free_func);
 
-	while(current != 0)
+	if(free_func)
+		free_func(node->data);
+	if(tree->free_key)
+		tree->free_key(node->key);
+	mm_free(node);
+}
+
+void rbtree_insert(struct rbtree * tree, void * key, void * data)
+{
+	struct rbtree_node * new_node = mm_allocate(sizeof(struct rbtree_node),
+		MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	new_node->left = tree->nil;
+	new_node->right = tree->nil;
+	new_node->color = RBTREE_RED;
+	if(tree->dup_key)
+		new_node->key = tree->dup_key(key);
+	else
+		new_node->key = key;
+	new_node->data = data;
+
+	struct rbtree_node * current = tree->root, * parent = tree->nil;
+	while(current != tree->nil)
 	{
 		parent = current;
-		if(key < current->key)
+		if(tree->compare_key(key, current->key) < 0)
 			current = current->left;
 		else
 			current = current->right;
 	}
 
-	struct rbtree_node * new_node = mm_allocate(sizeof(struct rbtree_node), MM_DEFAULT_ALIGNMENT,
-		MM_MEM_NORMAL);
-	memclr(new_node, sizeof(struct rbtree_node));
-	new_node->key = key;
-	new_node->data = data;
 	new_node->parent = parent;
-	new_node->color = RBTREE_RED;
-
-	if(parent == 0)
+	if(parent == tree->nil)
 		tree->root = new_node;
-	else if(key < parent->key)
+	else if(tree->compare_key(key, parent->key) < 0)
 		parent->left = new_node;
 	else
 		parent->right = new_node;
 
-	insertion_fixup(tree, new_node);
+	insert_fixup(tree, new_node);
 }
 
-void * rbtree_remove(struct rbtree * tree, uint32_t key)
+static void insert_fixup(struct rbtree * tree, struct rbtree_node * z)
 {
-	// TODO: write me
-	debug_printf("Fixme: deleting from red-black trees not implemented yet\n");
-	return 0;
-}
-
-void * rbtree_get_value(struct rbtree * tree, uint32_t key)
-{
-	struct rbtree_node * n = find_node(tree, key);
-	if(n == 0)
-		return 0;
-	else
-		return n->data;
-}
-
-bool rbtree_key_exists(struct rbtree * tree, uint32_t key)
-{
-	if(find_node(tree, key) != 0)
-		return true;
-	else
-		return false;
-}
-
-// FIXME: The insertion_fixup function below has some serious issues.
-// FIXME: It has evolved by bugs being fixed by simple hacks, thus all the null checks.
-static void insertion_fixup(struct rbtree * tree, struct rbtree_node * n)
-{
-	struct rbtree_node * y;
-
-	if(n == tree->root)
+	while(z->parent->color == RBTREE_RED)
 	{
-		n->color = RBTREE_BLACK;
-		return;
-	}
-	if(n->parent != 0 && n->parent->color == RBTREE_BLACK)
-		return;
-
-	while(n != tree->root && n->parent->parent != 0 && n->parent->color == RBTREE_RED)
-	{
-		if(n->parent == n->parent->parent->left)
+		if(z->parent == z->parent->parent->left)
 		{
-			if(n->parent->parent->right == 0)
-				break;
-			y = n->parent->parent->right;
-
+			struct rbtree_node * y = z->parent->parent->right;
 			if(y->color == RBTREE_RED)
 			{
-				n->parent->color = RBTREE_BLACK;
-				if(y != 0)
-					y->color = RBTREE_BLACK;
-				if(y != 0 && y->parent != 0 && y->parent->parent != 0)
-					y->parent->parent->color = RBTREE_RED;
-				n = n->parent->parent;
+				z->parent->color = RBTREE_BLACK;
+				y->color = RBTREE_BLACK;
+				z->parent->parent->color = RBTREE_RED;
+				z = z->parent->parent;
 			} else {
-				if(n == n->parent->right)
+				if(z == z->parent->right)
 				{
-					n = n->parent;
-					left_rotate(tree, n);
+					z = z->parent;
+					left_rotate(tree, z);
 				}
-
-				n->parent->color = RBTREE_BLACK;
-				n->parent->parent->color = RBTREE_RED;
-				right_rotate(tree, n->parent->parent);
+				z->parent->color = RBTREE_BLACK;
+				z->parent->parent->color = RBTREE_RED;
+				right_rotate(tree, z->parent->parent);
 			}
 		} else {
-			if(n->parent->parent->left == 0)
-				break;
-			y = n->parent->parent->left;
-
-			if(y != 0 && y->color == RBTREE_RED)
+			struct rbtree_node * y = z->parent->parent->left;
+			if(y->color == RBTREE_RED)
 			{
-				n->parent->color = RBTREE_BLACK;
-				if(y != 0)
-					y->color = RBTREE_BLACK;
-				if(y != 0 && y->parent != 0 && y->parent->parent != 0)
-					y->parent->parent->color = RBTREE_RED;
-				n = n->parent->parent;
+				z->parent->color = RBTREE_BLACK;
+				y->color = RBTREE_BLACK;
+				z->parent->parent->color = RBTREE_RED;
+				z = z->parent->parent;
 			} else {
-				if(n == n->parent->left)
+				if(z == z->parent->left)
 				{
-					n = n->parent;
-					right_rotate(tree, n);
+					z = z->parent;
+					right_rotate(tree, z);
 				}
-
-				n->parent->color = RBTREE_BLACK;
-				n->parent->parent->color = RBTREE_RED;
-				left_rotate(tree, n->parent->parent);
+				z->parent->color = RBTREE_BLACK;
+				z->parent->parent->color = RBTREE_RED;
+				left_rotate(tree, z->parent->parent);
 			}
+
 		}
 	}
 
@@ -173,12 +166,11 @@ static void left_rotate(struct rbtree * tree, struct rbtree_node * x)
 	struct rbtree_node * y = x->right;
 	x->right = y->left;
 
-	if(y->left != 0)
+	if(y->left != tree->nil)
 		y->left->parent = x;
-
 	y->parent = x->parent;
 
-	if(x->parent == 0)
+	if(x->parent == tree->nil)
 		tree->root = y;
 	else if(x == x->parent->left)
 		x->parent->left = y;
@@ -194,35 +186,198 @@ static void right_rotate(struct rbtree * tree, struct rbtree_node * x)
 	struct rbtree_node * y = x->left;
 	x->left = y->right;
 
-	if(y->right != 0)
+	if(y->right != tree->nil)
 		y->right->parent = x;
-	
 	y->parent = x->parent;
 
-	if(x->parent == 0)
+	if(x->parent == tree->nil)
 		tree->root = y;
-	else if(x == x->parent->left)
-		x->parent->left = y;
-	else
+	else if(x == x->parent->right)
 		x->parent->right = y;
+	else
+		x->parent->left = y;
 
 	y->right = x;
 	x->parent = y;
 }
 
-static struct rbtree_node * find_node(struct rbtree * tree, uint32_t key)
+void * rbtree_delete(struct rbtree * tree, void * key)
+{
+	struct rbtree_node * node = find_node(tree, key);
+	if(node == 0 || node == tree->nil)
+		return 0;
+
+	void * retval = node->data;
+
+	struct rbtree_node * z = node;
+	struct rbtree_node * y = z;
+	struct rbtree_node * x;
+	int y_orig_color = y->color;
+
+	if(z->left == tree->nil)
+	{
+		x = z->right;
+		transplant(tree, z, z->right);
+	} else if(z->right == tree->nil)
+	{
+		x = z->left;
+		transplant(tree, z, z->left);
+	} else {
+		y = tree_minimum(tree, z->right);
+		y_orig_color = y->color;
+		x = y->right;
+		if(y->parent == z)
+			x->parent = y;
+		else {
+			transplant(tree, y, y->right);
+			y->right = z->right;
+			y->right->parent = y;
+		}
+
+		transplant(tree, z, y);
+		y->left = z->left;
+		y->left->parent = y;
+		y->color = z->color;
+	}
+
+	if(y_orig_color == RBTREE_BLACK)
+		delete_fixup(tree, x);
+
+	if(tree->free_key)
+		tree->free_key(node->key);
+	mm_free(node);
+	return retval;
+}
+
+static void delete_fixup(struct rbtree * tree, struct rbtree_node * x)
+{
+	while(x != tree->root && x->color == RBTREE_BLACK)
+	{
+		if(x == x->parent->left)
+		{
+			struct rbtree_node * w = x->parent->right;
+
+			if(w->color == RBTREE_RED)
+			{
+				w->color = RBTREE_BLACK;
+				x->parent->color = RBTREE_RED;
+				left_rotate(tree, x->parent);
+				w = x->parent->right;
+			}
+
+			if(w->left->color == RBTREE_BLACK && w->right->color == RBTREE_BLACK)
+			{
+				w->color = RBTREE_RED;
+				x = x->parent;
+			} else {
+				if(w->right->color == RBTREE_BLACK)
+				{
+					w->left->color = RBTREE_BLACK;
+					w->color = RBTREE_RED;
+					right_rotate(tree, w);
+					w = x->parent->right;
+				}
+
+				w->color = x->parent->color;
+				x->parent->color = RBTREE_BLACK;
+				w->right->color = RBTREE_BLACK;
+
+				left_rotate(tree, x->parent);
+				x = tree->root;
+			}
+		} else {
+			struct rbtree_node * w = x->parent->left;
+
+			if(w->color == RBTREE_RED)
+			{
+				w->color = RBTREE_BLACK;
+				x->parent->color = RBTREE_RED;
+				right_rotate(tree, x->parent);
+				w = x->parent->left;
+			}
+
+			if(w->right->color == RBTREE_BLACK && w->left->color == RBTREE_BLACK)
+			{
+				w->color = RBTREE_RED;
+				x = x->parent;
+			} else {
+				if(w->left->color == RBTREE_BLACK)
+				{
+					w->right->color = RBTREE_BLACK;
+					w->color = RBTREE_RED;
+					left_rotate(tree, w);
+					w = x->parent->left;
+				}
+
+				w->color = x->parent->color;
+				x->parent->color = RBTREE_BLACK;
+				w->left->color = RBTREE_BLACK;
+				
+				right_rotate(tree, x->parent);
+				x = tree->root;
+			}
+		}
+	}
+
+	x->color = RBTREE_BLACK;
+}
+
+static void transplant(struct rbtree * tree, struct rbtree_node * u, struct rbtree_node * v)
+{
+	if(u->parent == tree->nil)
+		tree->root = v;
+	else if(u == u->parent->left)
+		u->parent->left = v;
+	else
+		u->parent->right = v;
+	v->parent = u->parent;
+}
+
+static struct rbtree_node * tree_minimum(struct rbtree * tree, struct rbtree_node * x)
+{
+	while(x->left != tree->nil)
+		x = x->left;
+	return x;
+}
+
+void * rbtree_get_value(struct rbtree * tree, void * key)
+{
+	struct rbtree_node * node = find_node(tree, key);
+	return node == 0 ? 0 : node->data;
+}
+
+bool rbtree_key_exists(struct rbtree * tree, void * key)
+{
+	if(find_node(tree, key))
+		return true;
+	else
+		return false;
+}
+
+static struct rbtree_node * find_node(struct rbtree * tree, void * key)
 {
 	struct rbtree_node * current = tree->root;
-	while(current != 0)
+
+	while(current != tree->nil)
 	{
-		if(key == current->key)
+		if(tree->compare_key(key, current->key) == 0)
 			return current;
-		else if(key < current->key)
+		else if(tree->compare_key(key, current->key) < 0)
 			current = current->left;
 		else
 			current = current->right;
 	}
 
 	return 0;
+}
+
+static int compare_pointer_values(void * a, void * b)
+{
+	if(a < b)
+		return -1;
+	else if(a == b)
+		return 0;
+	else
+		return 1;
 }
 

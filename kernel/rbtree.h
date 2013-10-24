@@ -11,13 +11,12 @@
  * @defgroup rbtree Red-Black Tree Functions
  * Functionality for working with red-black trees.
  *
- * The red-black tree is implemented using algorithms and guidance from
- * "Introduction to Algorithms" by Cormen, et al. Turns out finding other
- * sources for information on red-black trees is difficult, as everyone
- * else on the internet seems to use Cormen as well.
+ * The red-black tree is implemented using algorithms from
+ * "Introduction to Algorithms" by Cormen, et al.
  *
- * @todo Add support for removing entries from the tree.
- * @todo Rewrite the whole thing so that it has no bugs.
+ * This implementation is based on the implementation available on
+ * https://github.com/skordal/librbtree
+ *
  * @{
  */
 
@@ -25,49 +24,68 @@
 struct rbtree;
 
 /**
- * Allocates a new, empty red-black tree.
- * @return a pointer to an empty red-black tree.
+ * Key comparison type. Compares two keys, returning -1 if a < b,
+ * 0 if a = b and 1 if a > b.
  */
-struct rbtree * rbtree_new(void) __attribute((malloc));
+typedef int (*rbtree_key_compare_func)(void *, void *);
+/** Key duplication function type. */
+typedef void * (*rbtree_key_duplicate_func)(void *);
+/** Key deallocation function type. */
+typedef void (*rbtree_key_free_func)(void *);
+/** Data deallocation function type. */
+typedef void (*rbtree_data_free_func)(void *);
+
+/**
+ * Constructs an empty red-black tree.
+ * @param key_compare function for comparing keys.
+ * @param key_free function for freeing keys.
+ * @param key_dup function for duplicating keys.
+ * @return a new, empty red-black tree.
+ */
+struct rbtree * rbtree_new(rbtree_key_compare_func key_compare, rbtree_key_free_func key_free,
+	rbtree_key_duplicate_func key_dup) __attribute((malloc));
 
 /**
  * Frees a red-black tree and all its nodes.
+ * Can also optionally call a function to free the data stored in the nodes.
  * @param tree the tree to free.
- * @todo Add callback for deleting the node data of each freed node.
+ * @param free_func the function to use for freeing data in nodes or 0 if the
+ *                  data should not be freed.
  */
-void rbtree_free(struct rbtree * tree);
+void rbtree_free(struct rbtree * tree, rbtree_data_free_func free_func);
 
 /**
- * Inserts an element into a red-black tree.
+ * Inserts a node in a red-black tree.
  * @param tree the tree to insert into.
- * @param key the key to insert the element for.
+ * @param key the key to insert at.
  * @param data the data to insert into the tree.
  */
-void rbtree_insert(struct rbtree * tree, uint32_t key, void * data);
+void rbtree_insert(struct rbtree * tree, void * key, void * data);
 
 /**
- * Removes an element from a red-black tree.
- * @param tree the tree to remove from.
- * @param key the key to delete from the tree.
- * @return the data associated with the removed key or 0 if nothing was removed.
+ * Deletes a node in a red-black tree.
+ * @param tree the tree to delete from.
+ * @param key the key to delete.
+ * @return the data associated with the deleted key, or 0 if the key did not
+ *         exist.
  */
-void * rbtree_remove(struct rbtree * tree, uint32_t key);
+void * rbtree_delete(struct rbtree * tree, void * key);
 
 /**
- * Gets the value associated with a specified key.
- * @param tree the tree to use for looking up the key.
- * @param key the key to look up.
+ * Gets the data associated with a specified key in a red-black tree.
+ * @param tree the tree to do the lookup in.
+ * @param key the key to look for.
  * @return the data associated with the key, or 0 if the key was not found.
  */
-void * rbtree_get_value(struct rbtree * tree, uint32_t key);
+void * rbtree_get_value(struct rbtree * tree, void * key);
 
 /**
- * Checks if a key exists in a tree.
- * @param tree the tree to search in.
- * @param key the key to find.
- * @return `true` if the key exists in the tree, `false` otherwise.
+ * Checks if a specified key exists in a red-black tree.
+ * @param tree the tree to look in.
+ * @param key the key to check for.
+ * @return `true` if the key is in the tree, `false` otherwise.
  */
-bool rbtree_key_exists(struct rbtree * tree, uint32_t key);
+bool rbtree_key_exists(struct rbtree * tree, void * key);
 
 /** @} */
 

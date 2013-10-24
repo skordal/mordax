@@ -58,7 +58,7 @@ static uint8_t asid = 0;
 void mmu_initialize(void)
 {
 	extern void * text_start, * data_start, * kernel_address, * load_address;
-	kernel_lookup_table = rbtree_new();
+	kernel_lookup_table = rbtree_new(0, 0, 0);
 
 	// Create the page table stack:
 	pt_stack = mm_object_stack_create(1024, 1024, 16, 16);
@@ -90,7 +90,7 @@ void mmu_initialize(void)
 	// Add the page table to the kernel translation table:
 	uint32_t pt_entry = (uint32_t) mmu_virtual_to_physical(page_table) | MMU_PAGE_TABLE_TYPE;
 	kernel_translation_table[(uint32_t) &kernel_address >> 20] = pt_entry;
-	rbtree_insert(kernel_lookup_table, (uint32_t) mmu_virtual_to_physical(page_table), (void *) page_table);
+	rbtree_insert(kernel_lookup_table, mmu_virtual_to_physical(page_table), page_table);
 
 	// Clear temporary section mappings:
 	uint32_t old_mapping_size = ((uint32_t) &kernel_dataspace_end - (uint32_t) &kernel_address + (1024 * 1024)) & -(1024 * 1024);
@@ -118,7 +118,7 @@ struct mmu_translation_table * mmu_create_translation_table(void)
 	struct mmu_translation_table * retval = mm_allocate(sizeof(struct mmu_translation_table), 8192, MM_MEM_NORMAL);
 
 	memclr(retval, sizeof(struct mmu_translation_table));
-	retval->lookup_table = rbtree_new();
+	retval->lookup_table = rbtree_new(0, 0, 0);
 	retval->asid = ++asid; // TODO: check that the ASID is unused
 
 	return retval;
@@ -211,10 +211,10 @@ physical_ptr mmu_virtual_to_physical(void * virtual)
 
 void * mmu_physical_to_virtual(physical_ptr physical)
 {
-	if(rbtree_key_exists(kernel_lookup_table, (uint32_t) physical))
-		return rbtree_get_value(kernel_lookup_table, (uint32_t) physical);
+	if(rbtree_key_exists(kernel_lookup_table, physical))
+		return rbtree_get_value(kernel_lookup_table, physical);
 	else
-		return rbtree_get_value(user_translation_table->lookup_table, (uint32_t) physical);
+		return rbtree_get_value(user_translation_table->lookup_table, physical);
 }
 
 static void * mmu_map_page(physical_ptr physical, void * virtual,
@@ -238,11 +238,11 @@ static void * mmu_map_page(physical_ptr physical, void * virtual,
 		memclr(page_table, 1024);
 		if(table == kernel_translation_table)
 		{
-			rbtree_insert(kernel_lookup_table, (uint32_t) mmu_virtual_to_physical(page_table),
+			rbtree_insert(kernel_lookup_table, mmu_virtual_to_physical(page_table),
 				page_table);
 		} else {
 			rbtree_insert(user_translation_table->lookup_table,
-				(uint32_t) mmu_virtual_to_physical(page_table), page_table);
+				mmu_virtual_to_physical(page_table), page_table);
 		}
 		table[(uint32_t) virtual >> 20] = (uint32_t) mmu_virtual_to_physical(page_table)
 			| MMU_PAGE_TABLE_TYPE;
@@ -257,9 +257,9 @@ static void * mmu_map_page(physical_ptr physical, void * virtual,
 
 	// Insert the page into the lookup table:
 	if(table == kernel_translation_table)
-		rbtree_insert(kernel_lookup_table, (uint32_t) physical, virtual);
+		rbtree_insert(kernel_lookup_table, physical, virtual);
 	else
-		rbtree_insert(user_translation_table->lookup_table, (uint32_t) physical, virtual);
+		rbtree_insert(user_translation_table->lookup_table, physical, virtual);
 
 	return virtual;
 }
@@ -277,9 +277,9 @@ static void mmu_unmap_page(void * virtual)
 	// Round the address down:
 	virtual = (void *) ((uint32_t) virtual & -4096);
 	if(table == kernel_translation_table)
-		rbtree_remove(kernel_lookup_table, (uint32_t) mmu_virtual_to_physical(virtual));
+		rbtree_delete(kernel_lookup_table, mmu_virtual_to_physical(virtual));
 	else
-		rbtree_remove(user_translation_table->lookup_table, (uint32_t) mmu_virtual_to_physical(virtual));
+		rbtree_delete(user_translation_table->lookup_table, mmu_virtual_to_physical(virtual));
 
 	if(page_table != 0)
 		page_table[((uint32_t) virtual & 0xfffff) >> 12] = 0;
