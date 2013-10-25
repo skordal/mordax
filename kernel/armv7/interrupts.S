@@ -21,14 +21,14 @@ interrupts_initialize:
 .macro store_context
 	sub sp, #15 * 4
 	stmia sp, {r0 - r14}^	@ Store user-mode registers
-	mrs r0, spsr
-	stmdb sp!, {r0, lr}	@ Exception return address and SPSR
+	mrs ip, spsr
+	stmdb sp!, {ip, lr}	@ Exception return address and SPSR
 .endm
 
 @ Restores the current execution context:
 .macro restore_context
-	ldmia sp!, {r0, lr}	@ Exception return address and SPSR
-	msr spsr, r0
+	ldmia sp!, {ip, lr}	@ Exception return address and SPSR
+	msr spsr, ip
 	ldmia sp, {r0 - r14}^	@ Load user-mode registers
 	add sp, #15 * 4
 .endm
