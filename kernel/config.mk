@@ -27,7 +27,7 @@ SOURCE_FILES += \
 	process.c \
 	scheduler.c \
 	stack.c \
-	svc.c \
+	syscall.c \
 	thread.c \
 	utils.c
 

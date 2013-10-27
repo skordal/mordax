@@ -59,7 +59,7 @@ int_software_interrupt:
 
 	@ Call the interrupt handler:
 	mov r0, sp
-	bl svc_interrupt_handler
+	bl syscall_interrupt_handler
 
 	restore_context
 	movs pc, lr

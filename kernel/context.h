@@ -41,14 +41,14 @@ void context_copy(struct thread_context * dest, struct thread_context * src);
  * @param num the argument number to extract, in the range 0-2.
  * @return the value of the specified argument.
  */
-void * context_get_svc_argument(struct thread_context * context, unsigned num);
+void * context_get_syscall_argument(struct thread_context * context, unsigned num);
 
 /**
  * Sets the return value of an SVC in a thread context.
  * @param context the context to use.
  * @param value the value to set as the SVC return value.
  */
-void context_set_svc_retval(struct thread_context * context, void * value);
+void context_set_syscall_retval(struct thread_context * context, void * value);
 
 /**
  * Prints the contents of a thread context. Used for debugging.

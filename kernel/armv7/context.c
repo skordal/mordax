@@ -28,7 +28,7 @@ void context_copy(struct thread_context * dest, struct thread_context * src)
 	memcpy(dest, src, sizeof(struct thread_context));
 }
 
-void * context_get_svc_argument(struct thread_context * context, unsigned num)
+void * context_get_syscall_argument(struct thread_context * context, unsigned num)
 {
 	if(num > 2)
 		return 0;
@@ -36,7 +36,7 @@ void * context_get_svc_argument(struct thread_context * context, unsigned num)
 		return (void *) context->r[num];
 }
 
-void context_set_svc_retval(struct thread_context * context, void * value)
+void context_set_syscall_retval(struct thread_context * context, void * value)
 {
 	context->r[0] = (uint32_t) value;
 }
