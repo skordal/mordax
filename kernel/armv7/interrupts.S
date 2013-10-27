@@ -51,8 +51,15 @@ int_undefined_instruction:
 int_software_interrupt:
 	store_context
 
+	@ Get the syscall number:
+	tst lr, #1
+	ldrheq r1, [lr, #-2]	@ Load the SVC instruction word (Thumb)
+	ldreq r1, [lr, #-4]	@ Load the SVC instruction word (ARM)
+	and r1, #0xff		@ Only 8-bit SVC numbers are supported
+
+	@ Call the interrupt handler:
 	mov r0, sp
-	bl abort_handler
+	bl svc_interrupt_handler
 
 	restore_context
 	movs pc, lr

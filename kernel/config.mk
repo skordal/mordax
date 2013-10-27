@@ -25,6 +25,7 @@ SOURCE_FILES += \
 	queue.c \
 	rbtree.c \
 	stack.c \
+	svc.c \
 	utils.c
 
 # Include build configuration files for the drivers:
