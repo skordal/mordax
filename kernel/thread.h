@@ -6,6 +6,7 @@
 #define MORDAX_THREAD_H
 
 #include "context.h"
+#include "process.h"
 #include "types.h"
 
 /**
