@@ -251,7 +251,7 @@ static void * mmu_map_page(physical_ptr physical, void * virtual,
 	uint32_t entry = ((uint32_t) physical & MMU_SMALL_PAGE_BASE_MASK) | MMU_SMALL_PAGE_TYPE |
 		small_page_type_bits(type) | small_page_permission_bits(permissions);
 	if((uint32_t) virtual < MMU_KERNEL_SPLIT_ADDRESS)
-		entry |= MMU_SMALL_PAGE_NG; // Set the not-global bit for userspace pages.
+		entry |= 1 << MMU_SMALL_PAGE_NG; // Set the not-global bit for userspace pages.
 
 	page_table[((uint32_t) virtual & 0xfffff) >> 12] = entry;
 
