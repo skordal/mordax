@@ -12,7 +12,7 @@ void svc_interrupt_handler(struct thread_context * context, uint8_t svc)
 {
 	debug_printf("Supervisor call: %d, context at %p\n", svc, context);
 	debug_printf("\tArgument 1: %x\n", context_get_svc_argument(context, 0));
-	debug_prinff("\tArgument 2: %x\n", context_get_svc_argument(context, 1));
+	debug_printf("\tArgument 2: %x\n", context_get_svc_argument(context, 1));
 	debug_printf("\tArgument 3: %x\n", context_get_svc_argument(context, 2));
 	debug_printf("\tReturning 0...\n");
 	context_set_svc_retval(context, 0);
