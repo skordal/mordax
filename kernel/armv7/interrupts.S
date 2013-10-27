@@ -23,6 +23,9 @@ interrupts_initialize:
 	stmia sp, {r0 - r14}^	@ Store user-mode registers
 	mrs ip, spsr
 	stmdb sp!, {ip, lr}	@ Exception return address and SPSR
+
+	ldr ip, =current_context
+	str sp, [ip]		@ Set the current context pointer to the stored context
 .endm
 
 @ Restores the current execution context:

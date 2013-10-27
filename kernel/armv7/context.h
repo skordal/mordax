@@ -5,7 +5,11 @@
 #ifndef MORDAX_ARMv7_CONTEXT_H
 #define MORDAX_ARMv7_CONTEXT_H
 
+#include "../context.h"
 #include "../types.h"
+
+/** Flag value indicating a need to store Neon register on context switches. */
+#define CONTEXT_STORE_NEON_STATE	(1 << 0)
 
 /**
  * @ingroup armv7
