@@ -4,7 +4,7 @@
 
 #include "debug.h"
 #include "mm.h"
-#include "scheduler.h"
+#include "process.h"
 #include "thread.h"
 
 struct thread * thread_create(struct process * parent, void * entrypoint, void * stack)
@@ -12,7 +12,7 @@ struct thread * thread_create(struct process * parent, void * entrypoint, void *
 	struct thread * retval = mm_allocate(sizeof(struct thread), MM_DEFAULT_ALIGNMENT,
 		MM_MEM_NORMAL);
 	retval->parent = parent;
-	retval->pid = scheduler_allocate_pid();
+	retval->tid = process_allocate_tid(parent);
 	retval->context = context_new();
 
 	context_set_pc(retval->context, entrypoint);

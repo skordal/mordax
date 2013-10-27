@@ -25,7 +25,7 @@ struct thread
 {
 	struct thread_context * context;	//< Stored context for this thread.
 	struct process * parent;		//< Parent process of this thread.
-	pid_t pid;				//< PID of this thread (more like thread ID).
+	tid_t tid;				//< PID of this thread (more like thread ID).
 };
 
 /**

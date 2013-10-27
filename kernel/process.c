@@ -6,12 +6,17 @@
 #include "kernel.h"
 #include "mm.h"
 #include "process.h"
+#include "scheduler.h"
 
 struct process * process_create(struct process_memory_map * memory_map)
 {
 	struct process * retval = mm_allocate(sizeof(struct process), MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
-	retval->refcount = 0;
+	retval->num_threads = 0;
 	retval->threads = queue_new();
+	retval->pid = scheduler_allocate_pid();
+
+	retval->next_tid = 0;
+	retval->allocated_tids = rbtree_new(0, 0, 0);
 
 	debug_printf("Creating process translation table...\n");
 	retval->translation_table = mmu_create_translation_table();
@@ -49,7 +54,7 @@ struct process * process_create(struct process_memory_map * memory_map)
 void process_add_thread(struct process * p, struct thread * t)
 {
 	queue_add_front(p->threads, t);
-	++p->refcount;
+	++p->num_threads;
 }
 
 struct thread * process_add_new_thread(struct process * p, void * entry, void * stack)
@@ -57,5 +62,28 @@ struct thread * process_add_new_thread(struct process * p, void * entry, void * 
 	struct thread * new_thread = thread_create(p, entry, stack);
 	process_add_thread(p, new_thread);
 	return new_thread;
+}
+
+tid_t process_allocate_tid(struct process * p)
+{
+	tid_t retval = p->next_tid++;
+	tid_t first_attempt = retval;
+
+	while(rbtree_key_exists(p->allocated_tids, (void *) retval))
+	{
+		retval = p->next_tid++;
+
+		// Check if all possibilities have been tried:
+		if(first_attempt == retval)
+			return -1;
+	}
+
+	rbtree_insert(p->allocated_tids, (void *) retval, (void *) true);
+	return retval;
+}
+
+void process_free_tid(struct process * p, tid_t tid)
+{
+	rbtree_delete(p->allocated_tids, (void *) tid);
 }
 

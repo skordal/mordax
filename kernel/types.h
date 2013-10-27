@@ -16,6 +16,8 @@ typedef void * physical_ptr;
 
 /** Process identitifer type. */
 typedef int32_t pid_t;
+/** Thread identifier type. */
+typedef int32_t tid_t;
 
 /** 64-bit generic big endian type. */
 typedef uint64_t be64;

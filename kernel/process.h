@@ -7,6 +7,7 @@
 
 #include "mmu.h"
 #include "queue.h"
+#include "rbtree.h"
 #include "thread.h"
 #include "types.h"
 
@@ -40,7 +41,11 @@ struct process
 {
 	struct mmu_translation_table * translation_table;
 	struct queue * threads;
-	unsigned int refcount; //< How many threads is part of this process.
+	unsigned int num_threads;
+	pid_t pid;
+
+	struct rbtree * allocated_tids;
+	tid_t next_tid;
 };
 
 struct process_memory_zone
@@ -80,6 +85,20 @@ void process_add_thread(struct process * p, struct thread * t);
  * @return a pointer to the thread that was created.
  */
 struct thread * process_add_new_thread(struct process * p, void * entry, void * stack);
+
+/**
+ * Allocates a new thread identifier for a thread.
+ * @param p the process.
+ * @return a new thread identifier or -1 if no TID can be allocated.
+ */
+tid_t process_allocate_tid(struct process * p);
+
+/**
+ * Deallocates a thread identifier for a thread.
+ * @param p the process.
+ * @param tid the TID.
+ */
+void process_free_tid(struct process * p, tid_t tid);
 
 /** @} */
 

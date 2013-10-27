@@ -50,7 +50,6 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 
 	running_queue = queue_new();
 	blocking_queue = queue_new();
-
 	allocated_pids = rbtree_new(0, 0, 0);
 
 	// Create the idle process + thread:
@@ -108,18 +107,19 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 
 void scheduler_add_thread(struct thread * t)
 {
-	debug_printf("Adding thread with PID %d to ready queue\n", (int) t->pid);
+	debug_printf("Adding thread with PID %d, TID %d to ready queue\n", (int) t->parent->pid,
+		(int) t->tid);
 	queue_add_front(running_queue, t);
 }
 
 pid_t scheduler_allocate_pid(void)
 {
-	pid_t retval = ++next_pid;
+	pid_t retval = next_pid++;
 	pid_t first_attempt = retval;
 
 	while(rbtree_key_exists(allocated_pids, (void *) retval))
 	{
-		retval = ++next_pid;
+		retval = next_pid++;
 
 		// Check if all possibilities have been tried:
 		if(first_attempt == retval)
@@ -149,13 +149,14 @@ static void scheduler_interrupt(void)
 		debug_printf("No thread to run, scheduling idle thread\n");
 		next_thread = idle_thread;
 	} else
-		debug_printf("Scheduling thread with PID %d to run\n", next_thread->pid);
+		debug_printf("Scheduling thread with PID %d, TID %d to run\n", next_thread->parent->pid,
+			next_thread->tid);
 
 	if(active_thread != 0)
 		context_copy(active_thread->context, current_context);
 	context_copy(current_context, next_thread->context);
 
-	mmu_set_user_translation_table(next_thread->parent->translation_table, next_thread->pid);
+	mmu_set_user_translation_table(next_thread->parent->translation_table, next_thread->parent->pid);
 	active_thread = next_thread;
 }
 
