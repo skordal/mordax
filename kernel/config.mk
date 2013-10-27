@@ -24,8 +24,11 @@ SOURCE_FILES += \
 	mm.c \
 	queue.c \
 	rbtree.c \
+	process.c \
+	scheduler.c \
 	stack.c \
 	svc.c \
+	thread.c \
 	utils.c
 
 # Include build configuration files for the drivers:
