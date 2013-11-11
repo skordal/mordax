@@ -13,6 +13,9 @@
  * @{
  */
 
+/** Function for freeing data in the queue. */
+typedef void (*queue_data_free_func)(void *);
+
 struct queue_node
 {
 	void * data;
@@ -36,7 +39,7 @@ struct queue * queue_new(void) __attribute((malloc));
  * Frees a queue.
  * @param queue the queue to free.
  */
-void queue_free(struct queue * q);
+void queue_free(struct queue * q, queue_data_free_func free_func);
 
 /**
  * Adds an element to the front of a queue.
@@ -67,6 +70,15 @@ bool queue_remove_front(struct queue * q, void ** e);
  * @return `true` if an element was removed, `false` otherwise.
  */
 bool queue_remove_back(struct queue * q, void ** e);
+
+/**
+ * Removes a node from a queue. The node is freed in the process.
+ * @param q the queue to remove from.
+ * @param node the node to remove from the queue.
+ * @return the data that was stored in the node.
+ */
+void * queue_remove_node(struct queue * q, struct queue_node * node);
+
 
 /** @} */
 

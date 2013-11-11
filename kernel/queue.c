@@ -14,12 +14,14 @@ struct queue * queue_new(void)
 	return retval;
 }
 
-void queue_free(struct queue * q)
+void queue_free(struct queue * q, queue_data_free_func free_func)
 {
 	struct queue_node * current = q->first;
 	while(current != 0)
 	{
 		struct queue_node * temp = current;
+		if(free_func)
+			free_func(temp->data);
 		current = current->next;
 		mm_free(temp);
 	}
@@ -101,8 +103,25 @@ bool queue_remove_back(struct queue * q, void ** e)
 	}
 }
 
-unsigned int queue_num_elements(struct queue * q)
+void * queue_remove_node(struct queue * q, struct queue_node * node)
 {
-	return q->elements;
+	if(node == 0)
+		return 0;
+
+	void * retval = node->data;
+
+	if(node->prev)
+		node->prev->next = node->next;
+	if(node->next)
+		node->next->prev = node->prev;
+
+	if(q->first == node)
+		q->first = node->next;
+	if(q->last == node)
+		q->last = node->prev;
+
+	mm_free(node);
+	return retval;
+
 }
 
