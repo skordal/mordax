@@ -36,6 +36,18 @@ bool scheduler_initialize(struct timer_driver * scheduler_timer, physical_ptr in
 void scheduler_add_thread(struct thread * t);
 
 /**
+ * Removes a thread from the scheduler. This does not free the thread structure.
+ * @param pid the PID of the process containing the thread.
+ * @param tid the TID of the thread.
+ */
+struct thread * scheduler_remove_thread(struct thread * t);
+
+/**
+ * Forces the scheduler to do a scheduling pass.
+ */
+void scheduler_reschedule();
+
+/**
  * Allocates a new process identifier (PID) for a thread.
  * @return the new process identifier, or -1 if no PID can be allocated.
  */

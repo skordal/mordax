@@ -29,8 +29,6 @@ struct thread * active_thread = 0;
 // Idle thread:
 static struct thread * idle_thread;
 
-// Scheduler interrupt handler:
-static void scheduler_interrupt(void);
 // Idle thread loop:
 static void idle_thread_loop(void) __attribute((naked, noreturn));
 
@@ -46,7 +44,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 
 	// Set up the timer:
 	scheduler_timer->set_interval(1000000);
-	scheduler_timer->set_callback(scheduler_interrupt);
+	scheduler_timer->set_callback(scheduler_reschedule);
 
 	running_queue = queue_new();
 	blocking_queue = queue_new();
@@ -112,6 +110,70 @@ void scheduler_add_thread(struct thread * t)
 	queue_add_front(running_queue, t);
 }
 
+void scheduler_reschedule()
+{
+	debug_printf("Rescheduling...\n");
+	struct thread * next_thread;
+
+	if(active_thread != 0 && active_thread != idle_thread)
+		queue_add_back(running_queue, active_thread);
+
+	// If no thread can be run, schedule the idle thread:
+	if(!queue_remove_front(running_queue, (void **) &next_thread))
+	{
+		debug_printf("No thread to run, scheduling idle thread\n");
+		next_thread = idle_thread;
+	} else
+		debug_printf("Scheduling thread with PID %d, TID %d to run\n", next_thread->parent->pid,
+			next_thread->tid);
+
+	if(active_thread != 0)
+		context_copy(active_thread->context, current_context);
+	context_copy(current_context, next_thread->context);
+
+	mmu_set_user_translation_table(next_thread->parent->translation_table, next_thread->parent->pid);
+	active_thread = next_thread;
+}
+
+struct thread * scheduler_remove_thread(struct thread * t)
+{
+	debug_printf("Removing thread with PID %d, TID %d from the scheduler queues\n",
+		(int) t->parent->pid, (int) t->tid);
+	if(t == active_thread)
+		active_thread = 0;
+
+	// Remove the thread from the running queue:
+	struct queue_node * current = running_queue->first;
+	while(current != 0)
+	{
+		struct thread * current_thread = current->data;
+		if(current_thread == t)
+		{
+			queue_remove_node(running_queue, current);
+			break;
+		}
+
+		current = current->next;
+	}
+
+	// Remove the thread from the blocking queue:
+	// TODO: think this through more closely when blocking is needed...
+	current = blocking_queue->first;
+	while(current != 0)
+	{
+		struct thread * current_thread = current->data;
+		if(current_thread == t)
+		{
+			queue_remove_node(blocking_queue, current);
+			break;
+		}
+
+		current = current->next;
+	}
+
+	return t;
+}
+
 pid_t scheduler_allocate_pid(void)
 {
 	pid_t retval = next_pid++;
@@ -133,31 +195,6 @@ pid_t scheduler_allocate_pid(void)
 void scheduler_free_pid(pid_t pid)
 {
 	rbtree_delete(allocated_pids, (void *) pid);
-}
-
-static void scheduler_interrupt(void)
-{
-	debug_printf("Scheduler interrupt\n");
-	struct thread * next_thread;
-
-	if(active_thread != 0 && active_thread != idle_thread)
-		queue_add_back(running_queue, active_thread);
-
-	// If no thread can be run, schedule the idle thread:
-	if(!queue_remove_front(running_queue, (void **) &next_thread))
-	{
-		debug_printf("No thread to run, scheduling idle thread\n");
-		next_thread = idle_thread;
-	} else
-		debug_printf("Scheduling thread with PID %d, TID %d to run\n", next_thread->parent->pid,
-			next_thread->tid);
-
-	if(active_thread != 0)
-		context_copy(active_thread->context, current_context);
-	context_copy(current_context, next_thread->context);
-
-	mmu_set_user_translation_table(next_thread->parent->translation_table, next_thread->parent->pid);
-	active_thread = next_thread;
 }
 
 static void idle_thread_loop(void)
