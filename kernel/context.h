@@ -29,6 +29,12 @@ enum context_processor_mode { CONTEXT_USERMODE, CONTEXT_KERNELMODE };
 struct thread_context * context_new(void);
 
 /**
+ * Frees a thread context.
+ * @param context the context to free.
+ */
+void context_free(struct thread_context * context);
+
+/**
  * Copies context information.
  * @param dest destination.
  * @param src source.

@@ -23,6 +23,11 @@ struct thread_context * context_new(void)
 	return retval;
 }
 
+void context_free(struct thread_context * context)
+{
+	mm_free(context);
+}
+
 void context_copy(struct thread_context * dest, struct thread_context * src)
 {
 	memcpy(dest, src, sizeof(struct thread_context));
