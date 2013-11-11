@@ -51,6 +51,14 @@ struct process * process_create(struct process_memory_map * memory_map)
 	return retval;
 }
 
+void process_free(struct process * p)
+{
+	queue_free(p->threads, (queue_data_free_func) thread_free);
+	scheduler_free_pid(p->pid);
+	rbtree_free(p->allocated_tids, 0);
+	// TODO: add support for freeing the translation table and physical memory
+}
+
 void process_add_thread(struct process * p, struct thread * t)
 {
 	queue_add_front(p->threads, t);

@@ -8,7 +8,6 @@
 #include "mmu.h"
 #include "queue.h"
 #include "rbtree.h"
-#include "thread.h"
 #include "types.h"
 
 #ifndef CONFIG_DEFAULT_STACK_SIZE
@@ -23,6 +22,8 @@
  * @defgroup process Process Support
  * @{
  */
+
+struct thread;
 
 /** Default stack size. */
 #define PROCESS_DEFAULT_STACK_SIZE	CONFIG_DEFAULT_STACK_SIZE
@@ -69,6 +70,12 @@ struct process_memory_map
  * @return the allocated process.
  */
 struct process * process_create(struct process_memory_map * memory_map);
+
+/**
+ * Frees a process.
+ * @param p the process to free.
+ */
+void process_free(struct process * p);
 
 /**
  * Adds a thread to a process.
