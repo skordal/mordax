@@ -164,7 +164,6 @@ static void idle_thread_loop(void)
 {
 	asm volatile(
 		"1:\n\t"
-		"svc #42\n\t"
 		"wfi\n\t"
 		"b 1b\n\t"
 		:::
