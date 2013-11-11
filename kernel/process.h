@@ -94,6 +94,14 @@ void process_add_thread(struct process * p, struct thread * t);
 struct thread * process_add_new_thread(struct process * p, void * entry, void * stack);
 
 /**
+ * Removes a thread from a process.
+ * @param p the process.
+ * @param t the thread.
+ * @return a pointer to the removed thread.
+ */
+struct thread * process_remove_thread(struct process * p, struct thread * t);
+
+/**
  * Allocates a new thread identifier for a thread.
  * @param p the process.
  * @return a new thread identifier or -1 if no TID can be allocated.

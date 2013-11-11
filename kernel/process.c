@@ -6,6 +6,7 @@
 #include "kernel.h"
 #include "mm.h"
 #include "process.h"
+#include "rbtree.h"
 #include "scheduler.h"
 
 struct process * process_create(struct process_memory_map * memory_map)
@@ -70,6 +71,31 @@ struct thread * process_add_new_thread(struct process * p, void * entry, void * 
 	struct thread * new_thread = thread_create(p, entry, stack);
 	process_add_thread(p, new_thread);
 	return new_thread;
+}
+
+struct thread * process_remove_thread(struct process * p, struct thread * t)
+{
+	struct queue_node * current = p->threads->first;
+	while(current != 0)
+	{
+		if(current->data != t)
+			current = current->next;
+		else
+			break;
+	}
+
+	if(current != 0)
+	{
+		debug_printf("Thread %d removed from process %d\n", t->tid, p->pid);
+		queue_remove_node(p->threads, current);
+		--p->num_threads;
+	}
+
+	if(p->num_threads == 0)
+		process_free(p);
+
+	// The thread ID is freed when the thread is freed.
+	return t;
 }
 
 tid_t process_allocate_tid(struct process * p)
