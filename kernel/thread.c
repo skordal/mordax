@@ -25,4 +25,14 @@ struct thread * thread_create(struct process * parent, void * entrypoint, void *
 	return retval;
 }
 
+void thread_free(struct thread * t)
+{
+	struct process * parent = t->parent;
+	process_remove_thread(t->parent, t);
+	process_free_tid(parent, t->tid);
+
+	// Free the thread structure and its members:
+	context_free(t->context);
+	mm_free(t);
+}
 

@@ -6,13 +6,14 @@
 #define MORDAX_THREAD_H
 
 #include "context.h"
-#include "process.h"
 #include "types.h"
 
 /**
  * @defgroup thread Thread Support
  * @{
  */
+
+struct context;
 
 /**
  * Thread structure.
@@ -38,6 +39,13 @@ struct thread
  */
 struct thread * thread_create(struct process * parent, void * entrypoint, void * stack)
 	__attribute((malloc));
+
+/**
+ * Frees a thread. The thread must have been removed from the
+ * scheduler, or problems will result.
+ * @param t the thread to free.
+ */
+void thread_free(struct thread * t);
 
 /** @} */
 
