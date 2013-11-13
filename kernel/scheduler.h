@@ -43,6 +43,18 @@ void scheduler_add_thread(struct thread * t);
 struct thread * scheduler_remove_thread(struct thread * t);
 
 /**
+ * Moves a thread to the queue of blocking threads.
+ * @param t the thread to move.
+ */
+void scheduler_move_thread_to_blocking(struct thread * t);
+
+/**
+ * Moves a thread to the queue of running threads.
+ * @param t the thread to move.
+ */
+void scheduler_move_thread_to_running(struct thread * t);
+
+/**
  * Forces the scheduler to do a scheduling pass.
  */
 void scheduler_reschedule();

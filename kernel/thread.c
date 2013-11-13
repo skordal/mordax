@@ -5,6 +5,7 @@
 #include "debug.h"
 #include "mm.h"
 #include "process.h"
+#include "scheduler.h"
 #include "thread.h"
 
 struct thread * thread_create(struct process * parent, void * entrypoint, void * stack)
@@ -12,8 +13,9 @@ struct thread * thread_create(struct process * parent, void * entrypoint, void *
 	struct thread * retval = mm_allocate(sizeof(struct thread), MM_DEFAULT_ALIGNMENT,
 		MM_MEM_NORMAL);
 	retval->parent = parent;
-	retval->tid = process_allocate_tid(parent);
+	retval->tid = -1;
 	retval->context = context_new();
+	retval->exit_listeners = queue_new();
 
 	context_set_pc(retval->context, entrypoint);
 	context_set_sp(retval->context, stack);
@@ -25,14 +27,31 @@ struct thread * thread_create(struct process * parent, void * entrypoint, void *
 	return retval;
 }
 
-void thread_free(struct thread * t)
+void thread_free(struct thread * t, int retval)
 {
+	// Iterate through all waiting threads and release them from
+	// the blocking queue:
+	struct queue_node * current = t->exit_listeners->first;
+	while(current != 0)
+	{
+		struct thread * listener = current->data;
+		context_set_syscall_retval(listener->context, (void *) retval);
+		scheduler_move_thread_to_running(listener);
+
+		current = current->next;
+	}
+
 	struct process * parent = t->parent;
-	process_remove_thread(t->parent, t);
-	process_free_tid(parent, t->tid);
+	if(parent != 0)
+		process_remove_thread(t->parent, t);
 
 	// Free the thread structure and its members:
 	context_free(t->context);
 	mm_free(t);
+}
+
+void thread_add_exit_listener(struct thread * t, struct thread * l)
+{
+	queue_add_front(t->exit_listeners, l);
 }
 

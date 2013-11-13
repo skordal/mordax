@@ -20,6 +20,7 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 	debug_printf("System call from process %d thread %d: %d\n",
 		active_thread->parent->pid, active_thread->tid, syscall);
 
+	// TODO: replace this switch with an array or something else more clever
 	switch(syscall)
 	{
 		case SYSCALL_SYSTEM:
@@ -27,6 +28,12 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 			break;
 		case SYSCALL_THREAD_EXIT:
 			syscall_thread_exit(context);
+			break;
+		case SYSCALL_THREAD_CREATE:
+			context_set_syscall_retval(context, (void *) syscall_thread_create(context));
+			break;
+		case SYSCALL_THREAD_JOIN:
+			syscall_thread_join(context);
 			break;
 		default: // TODO: handle unrecognized system calls
 			debug_printf("Unknown system call %d\n", syscall);
@@ -53,9 +60,38 @@ void syscall_system(struct thread_context * context, int function)
 
 void syscall_thread_exit(struct thread_context * context)
 {
-	struct thread * removed_thread = scheduler_remove_thread(active_thread);
+	// TODO: return the return value to waiting threads.
 
-	thread_free(removed_thread);
+	struct thread * removed_thread = scheduler_remove_thread(active_thread);
+	thread_free(removed_thread, (int) context_get_syscall_argument(context, 0));
+	scheduler_reschedule();
+}
+
+tid_t syscall_thread_create(struct thread_context * context)
+{
+	void * entrypoint = context_get_syscall_argument(context, 0);
+	void * stack_ptr = context_get_syscall_argument(context, 1);
+
+	struct thread * new_thread = process_add_new_thread(active_thread->parent, entrypoint, stack_ptr);
+	scheduler_add_thread(new_thread);
+
+	return new_thread->tid;
+}
+
+void syscall_thread_join(struct thread_context * context)
+{
+	tid_t retval = (tid_t) context_get_syscall_argument(context, 0);
+	debug_printf("PID %d, TID %d wants to join with TID %d\n", active_thread->parent->pid,
+		active_thread->tid, (tid_t) context_get_syscall_argument(context, 0));
+
+	struct thread * join_thread = process_get_thread_by_tid(active_thread->parent,
+		(tid_t) context_get_syscall_argument(context, 0));
+	if(join_thread == 0)
+		context_set_syscall_retval(active_thread->context, (void *) -1);
+		return;
+	else
+		thread_add_exit_listener(join_thread, active_thread);
+	scheduler_move_thread_to_blocking(active_thread);
 	scheduler_reschedule();
 }
 

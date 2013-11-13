@@ -102,18 +102,12 @@ struct thread * process_add_new_thread(struct process * p, void * entry, void * 
 struct thread * process_remove_thread(struct process * p, struct thread * t);
 
 /**
- * Allocates a new thread identifier for a thread.
+ * Looks up a thread by its TID.
  * @param p the process.
- * @return a new thread identifier or -1 if no TID can be allocated.
+ * @param tid the TID to look up.
+ * @return a pointer to the thread with the specified TID or 0 if the thread was not found.
  */
-tid_t process_allocate_tid(struct process * p);
-
-/**
- * Deallocates a thread identifier for a thread.
- * @param p the process.
- * @param tid the TID.
- */
-void process_free_tid(struct process * p, tid_t tid);
+struct thread * process_get_thread_by_tid(struct process * p, tid_t tid);
 
 /** @} */
 

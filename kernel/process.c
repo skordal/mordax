@@ -9,6 +9,11 @@
 #include "rbtree.h"
 #include "scheduler.h"
 
+// Allocates a thread ID for a thread added to the process.
+static tid_t allocate_tid(struct process * p, struct thread * t);
+// Frees a thread ID for a thread.
+static void free_tid(struct process * p, tid_t tid);
+
 struct process * process_create(struct process_memory_map * memory_map)
 {
 	struct process * retval = mm_allocate(sizeof(struct process), MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
@@ -54,6 +59,7 @@ struct process * process_create(struct process_memory_map * memory_map)
 
 void process_free(struct process * p)
 {
+	debug_printf("Freeing process %d\n", p->pid);
 	queue_free(p->threads, (queue_data_free_func) thread_free);
 	scheduler_free_pid(p->pid);
 	rbtree_free(p->allocated_tids, 0);
@@ -64,6 +70,9 @@ void process_add_thread(struct process * p, struct thread * t)
 {
 	queue_add_front(p->threads, t);
 	++p->num_threads;
+	t->tid = allocate_tid(p, t);
+	debug_printf("Added thread with TID %d to process %d, number of threads in process is now %d\n",
+		t->tid, p->pid, p->num_threads);
 }
 
 struct thread * process_add_new_thread(struct process * p, void * entry, void * stack)
@@ -75,6 +84,8 @@ struct thread * process_add_new_thread(struct process * p, void * entry, void * 
 
 struct thread * process_remove_thread(struct process * p, struct thread * t)
 {
+	free_tid(p, t->tid);
+
 	struct queue_node * current = p->threads->first;
 	while(current != 0)
 	{
@@ -92,13 +103,24 @@ struct thread * process_remove_thread(struct process * p, struct thread * t)
 	}
 
 	if(p->num_threads == 0)
+	{
+		debug_printf("Last thread removed from process, freeing process %d\n", p->pid);
 		process_free(p);
+		t->parent = 0;
+	}
 
-	// The thread ID is freed when the thread is freed.
 	return t;
 }
 
-tid_t process_allocate_tid(struct process * p)
+struct thread * process_get_thread_by_tid(struct process * p, tid_t tid)
+{
+	if(!rbtree_key_exists(p->allocated_tids, (void *) tid))
+		return 0;
+	else
+		return rbtree_get_value(p->allocated_tids, (void *) tid);
+}
+
+static tid_t allocate_tid(struct process * p, struct thread * t)
 {
 	tid_t retval = p->next_tid++;
 	tid_t first_attempt = retval;
@@ -112,12 +134,14 @@ tid_t process_allocate_tid(struct process * p)
 			return -1;
 	}
 
-	rbtree_insert(p->allocated_tids, (void *) retval, (void *) true);
+	rbtree_insert(p->allocated_tids, (void *) retval, t);
+	debug_printf("Process %d allocated TID %d\n", p->pid, retval);
 	return retval;
 }
 
-void process_free_tid(struct process * p, tid_t tid)
+static void free_tid(struct process * p, tid_t tid)
 {
+	debug_printf("Process %d freed TID %d\n", p->pid, tid);
 	rbtree_delete(p->allocated_tids, (void *) tid);
 }
 

@@ -110,31 +110,6 @@ void scheduler_add_thread(struct thread * t)
 	queue_add_front(running_queue, t);
 }
 
-void scheduler_reschedule()
-{
-	debug_printf("Rescheduling...\n");
-	struct thread * next_thread;
-
-	if(active_thread != 0 && active_thread != idle_thread)
-		queue_add_back(running_queue, active_thread);
-
-	// If no thread can be run, schedule the idle thread:
-	if(!queue_remove_front(running_queue, (void **) &next_thread))
-	{
-		debug_printf("No thread to run, scheduling idle thread\n");
-		next_thread = idle_thread;
-	} else
-		debug_printf("Scheduling thread with PID %d, TID %d to run\n", next_thread->parent->pid,
-			next_thread->tid);
-
-	if(active_thread != 0)
-		context_copy(active_thread->context, current_context);
-	context_copy(current_context, next_thread->context);
-
-	mmu_set_user_translation_table(next_thread->parent->translation_table, next_thread->parent->pid);
-	active_thread = next_thread;
-}
-
 struct thread * scheduler_remove_thread(struct thread * t)
 {
 	debug_printf("Removing thread with PID %d, TID %d from the scheduler queues\n",
@@ -172,6 +147,63 @@ struct thread * scheduler_remove_thread(struct thread * t)
 	}
 
 	return t;
+}
+
+void scheduler_move_thread_to_blocking(struct thread * t)
+{
+	struct queue_node * current = running_queue->first;
+	while(current != 0)
+	{
+		struct thread * current_thread = current->data;
+		if(current_thread == t)
+		{
+			queue_remove_node(running_queue, current);
+			queue_add_back(blocking_queue, current->data);
+			break;
+		}
+
+		current = current->next;
+	}
+}
+
+void scheduler_move_thread_to_running(struct thread * t)
+{
+	struct queue_node * current = blocking_queue->first;
+	while(current != 0)
+	{
+		struct thread * current_thread = current->data;
+		if(current_thread == t)
+		{
+			queue_remove_node(blocking_queue, current);
+			queue_add_front(running_queue, current->data);
+			break;
+		}
+	}
+}
+
+void scheduler_reschedule()
+{
+	debug_printf("Rescheduling...\n");
+	struct thread * next_thread;
+
+	if(active_thread != 0 && active_thread != idle_thread)
+		queue_add_back(running_queue, active_thread);
+
+	// If no thread can be run, schedule the idle thread:
+	if(!queue_remove_front(running_queue, (void **) &next_thread))
+	{
+		debug_printf("No thread to run, scheduling idle thread\n");
+		next_thread = idle_thread;
+	} else
+		debug_printf("Scheduling thread with PID %d, TID %d to run\n", next_thread->parent->pid,
+			next_thread->tid);
+
+	if(active_thread != 0)
+		context_copy(active_thread->context, current_context);
+	context_copy(current_context, next_thread->context);
+
+	mmu_set_user_translation_table(next_thread->parent->translation_table, next_thread->parent->pid);
+	active_thread = next_thread;
 }
 
 pid_t scheduler_allocate_pid(void)
