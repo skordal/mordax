@@ -110,3 +110,10 @@ int_irq:
 int_fiq:
 	subs pc, lr, #4
 
+.section .bss
+
+.global current_context
+.balign 4
+current_context:
+	.4byte 0
+

@@ -10,8 +10,6 @@
 #include "../mm.h"
 #include "../utils.h"
 
-struct thread_context * const current_context = 0;
-
 struct thread_context * context_new(void)
 {
 	struct thread_context * retval = mm_allocate(sizeof(struct thread_context),
