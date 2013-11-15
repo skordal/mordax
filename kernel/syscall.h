@@ -17,7 +17,7 @@
  * System syscall handler.
  * @param context process context information.
  */
-void syscall_system(struct thread_context * context, int function);
+void syscall_system(struct thread_context * context);
 
 /**
  * Thread exit syscall handler. Takes the exit status as parameter.

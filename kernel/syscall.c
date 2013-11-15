@@ -12,11 +12,6 @@
 // System call handler, called by target assembly code:
 void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 {
-	void * arguments[3] = {
-		context_get_syscall_argument(context, 0),
-		context_get_syscall_argument(context, 1),
-		context_get_syscall_argument(context, 2)};
-
 	debug_printf("System call from process %d thread %d: %d\n",
 		active_thread->parent->pid, active_thread->tid, syscall);
 
@@ -24,7 +19,7 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 	switch(syscall)
 	{
 		case SYSCALL_SYSTEM:
-			syscall_system(context, (int) arguments[0]);
+			syscall_system(context);
 			break;
 		case SYSCALL_THREAD_EXIT:
 			syscall_thread_exit(context);
@@ -41,8 +36,10 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 	}
 }
 
-void syscall_system(struct thread_context * context, int function)
+void syscall_system(struct thread_context * context)
 {
+	int function = context_get_syscall_argument(context, 0);
+
 	switch(function)
 	{
 		case 0:
