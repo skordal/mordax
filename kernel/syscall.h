@@ -2,36 +2,16 @@
 // (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
-#ifndef MORDAX_SYSCALLS_H
-#define MORDAX_SYSCALLS_H
+#ifndef MORDAX_SYSCALL_H
+#define MORDAX_SYSCALL_H
 
+#include "syscalls.h"
 #include "types.h"
 
 /**
  * @defgroup syscalls System Call Support
  * @{
  */
-
-/** System syscall. Used for various administrative purposes. */
-#define SYSCALL_SYSTEM		0
-
-/** Thread exit syscall. This exits and frees the calling thread. */
-#define SYSCALL_THREAD_EXIT	1
-
-/**
- * Thread creation syscall. This syscall takes two parameters,
- * a pointer to the entry point of the new thread and a pointer to
- * the top of the stack for the thread. It returns the thread
- * ID of the newly created thread, or -1 if an error occurs.
- */
-#define SYSCALL_THREAD_CREATE	2
-
-/**
- * Thread join syscall. Takes one parameter, the thread ID
- * of the thread to wait for. Blocks until the specified thread
- * terminates.
- */
-#define SYSCALL_THREAD_JOIN	3
 
 /**
  * System syscall handler.
