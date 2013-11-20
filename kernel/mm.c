@@ -3,7 +3,9 @@
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include "debug.h"
+#include "kernel.h"
 #include "mm.h"
+#include "mmu.h"
 #include "stack.h"
 #include "utils.h"
 
@@ -19,9 +21,12 @@
 #error "minimum free memory amount not set, define CONFIG_MIN_FREE_MEM with the proper value"
 #endif
 
-/** Minimum memory block size. */
 #ifndef MINIMUM_BLOCK_SIZE
 #define MINIMUM_BLOCK_SIZE	MM_DEFAULT_ALIGNMENT
+#endif
+
+#ifndef MINIMUM_EXPAND_SIZE
+#define MINIMUM_EXPAND_SIZE	4 * CONFIG_PAGE_SIZE
 #endif
 
 // Virtual memory block:
@@ -69,6 +74,8 @@ struct memory_zone * physical_memory_list = 0;
 // Total amount of free memory:
 static size_t total_free_memory = 0;
 
+// Expands the kernel heap:
+static bool expand_heap(size_t size);
 // Splits a block at the specified offset:
 static struct memory_block * mm_split(struct memory_block *, unsigned offset);
 
@@ -119,10 +126,13 @@ void * mm_allocate(size_t size, unsigned int alignment, unsigned int flags)
 	if(alignment < MM_DEFAULT_ALIGNMENT)
 		alignment = MM_DEFAULT_ALIGNMENT;
 
-	if(size <= MINIMUM_BLOCK_SIZE)
+	if(size < MINIMUM_BLOCK_SIZE)
 		size = MINIMUM_BLOCK_SIZE;
 	size += 3;
 	size &= -4;
+
+	while(total_free_memory <= size)
+		expand_heap(size);
 
 	struct memory_block * current = memory_list;
 	do {
@@ -160,11 +170,6 @@ void * mm_allocate(size_t size, unsigned int alignment, unsigned int flags)
 		current = current->next;
 	} while(current != 0);
 
-	if(total_free_memory <= CONFIG_MIN_FREE_MEM)
-	{
-		// TODO: expand dataspace here.
-	}
-
 	return retval;
 }
 
@@ -194,6 +199,54 @@ void mm_free(void * area)
 			block->next->next->prev = block;
 		block->next = block->next->next;
 	}
+}
+
+static bool expand_heap(size_t size)
+{
+	if(size < MINIMUM_EXPAND_SIZE)
+		size = MINIMUM_EXPAND_SIZE;
+
+	size = (size + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE;
+	debug_printf("Expanding heap by %d bytes\n", size);
+
+	// Prepare a new block for the allocated memory, if neccessary:
+	struct memory_block * new_block = kernel_dataspace_end;
+
+	// FIXME: This function will not work for memory blocks larger than the maximum buddy block size!
+	if(size > order_blocksize(CONFIG_BUDDY_MAX_ORDER))
+		kernel_panic("cannot expand heap due to too much memory requested");
+
+	// Allocate and map new memory:
+	struct mm_physical_memory new_memory;
+	if(!mm_allocate_physical(size, &new_memory))
+		kernel_panic("out of memory");
+	mmu_map(new_memory.base, kernel_dataspace_end, new_memory.size,
+		MMU_TYPE_DATA, MMU_PERM_RW_NA);
+	kernel_dataspace_end = (void *) ((uint32_t) kernel_dataspace_end + (uint32_t) new_memory.size);
+
+	// Append the allocated memory to the last block (if unused):
+	struct memory_block * last_block;
+	struct memory_block * current = memory_list;
+	while(current->next != 0)
+		current = current->next;
+	last_block = current;
+
+	if(last_block->used)
+	{
+		memclr(new_block, sizeof(struct memory_block));
+
+		new_block->used = false;
+		new_block->size = new_memory.size - sizeof(struct memory_block);
+		total_free_memory += new_memory.size - sizeof(struct memory_block);
+
+		last_block->next = new_block;
+		new_block->prev = last_block;
+	} else {
+		last_block->size += new_memory.size;
+		total_free_memory += new_memory.size;
+	}
+
+	return true;
 }
 
 static struct memory_block * mm_split(struct memory_block * block, unsigned offset)
