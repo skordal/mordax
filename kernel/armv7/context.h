@@ -6,7 +6,7 @@
 #define MORDAX_ARMv7_CONTEXT_H
 
 #include "../context.h"
-#include "../types.h"
+#include "../api/types.h"
 
 /**
  * @ingroup armv7

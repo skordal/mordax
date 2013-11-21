@@ -7,7 +7,7 @@
 
 #include "context.h"
 #include "queue.h"
-#include "types.h"
+#include "api/types.h"
 
 /**
  * @defgroup thread Thread Support

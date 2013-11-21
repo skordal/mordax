@@ -2,6 +2,8 @@
 // (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
+#include "api/memory.h"
+
 #include "context.h"
 #include "debug.h"
 #include "kernel.h"
@@ -61,7 +63,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 
 	// Create process memory map for the initial process; only two memory zones are needed,
 	// one for the code and one for the stack.
-	struct process_memory_zone initproc_datazones[] = {
+	struct mordax_memory_zone initproc_datazones[] = {
 		{
 			.base = PROCESS_START_ADDRESS,
 			.size = initproc_size,
@@ -75,7 +77,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 			.permissions = MMU_PERM_RW_RW,
 		}
 	};
-	struct process_memory_map initproc_memory_map = {
+	struct mordax_memory_map initproc_memory_map = {
 		.num_zones = 2,
 		.zones = initproc_datazones,
 	};

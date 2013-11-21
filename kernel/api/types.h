@@ -2,8 +2,8 @@
 // (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
-#ifndef MORDAX_TYPES_H
-#define MORDAX_TYPES_H
+#ifndef MORDAX_API_TYPES_H
+#define MORDAX_API_TYPES_H
 
 #include <stdbool.h>
 #include <stdint.h>

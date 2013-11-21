@@ -6,7 +6,7 @@
 #define MORDAX_SCHEDULER_H
 
 #include "thread.h"
-#include "types.h"
+#include "api/types.h"
 #include "drivers/timer/timer.h"
 
 /**

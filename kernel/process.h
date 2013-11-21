@@ -8,7 +8,9 @@
 #include "mmu.h"
 #include "queue.h"
 #include "rbtree.h"
-#include "types.h"
+
+#include "api/memory.h"
+#include "api/types.h"
 
 #ifndef CONFIG_DEFAULT_STACK_SIZE
 #error "user-space stack size not set, define CONFIG_DEFAULT_STACK_SIZE with the proper stack size"
@@ -47,20 +49,7 @@ struct process
 
 	struct rbtree * allocated_tids;
 	tid_t next_tid;
-};
 
-struct process_memory_zone
-{
-	void * base;
-	size_t size;
-	enum mmu_memory_type type;
-	enum mmu_memory_permissions permissions;
-};
-
-struct process_memory_map
-{
-	int num_zones;
-	struct process_memory_zone * zones;
 };
 
 /**
@@ -69,7 +58,7 @@ struct process_memory_map
  * @param memory_map a memory map containing the initial layout of the process.
  * @return the allocated process.
  */
-struct process * process_create(struct process_memory_map * memory_map);
+struct process * process_create(struct mordax_memory_map * memory_map);
 
 /**
  * Frees a process.

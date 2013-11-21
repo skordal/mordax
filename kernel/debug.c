@@ -3,7 +3,7 @@
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include "debug.h"
-#include "types.h"
+#include "api/types.h"
 
 #include <stdarg.h>
 #include <stdbool.h>

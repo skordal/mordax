@@ -5,7 +5,7 @@
 #ifndef MORDAX_RBTREE_H
 #define MORDAX_RBTREE_H
 
-#include "types.h"
+#include "api/types.h"
 
 /**
  * @defgroup rbtree Red-Black Tree Functions

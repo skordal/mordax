@@ -6,7 +6,7 @@
 #define MORDAX_DRIVERS_DEBUG_H
 
 #include <dt.h>
-#include <types.h>
+#include <api/types.h>
 
 /** Function used for initializing a debug terminal. */
 typedef bool (*debug_driver_init_func)(struct dt_node * device_node);

@@ -4,11 +4,12 @@
 
 #include <stdint.h>
 
+#include "../api/types.h"
+
 #include "../debug.h"
 #include "../mm.h"
 #include "../mmu.h"
 #include "../rbtree.h"
-#include "../types.h"
 #include "../utils.h"
 
 #include "mmu.h"
@@ -39,7 +40,7 @@ struct mm_object_stack * pt_stack;
 
 // Maps one page of memory:
 static void * mmu_map_page(physical_ptr physical, void * virtual,
-	enum mmu_memory_type type, enum mmu_memory_permissions permissions);
+	enum mordax_memory_type type, enum mordax_memory_permissions permissions);
 // Unmaps one page of memory:
 static void mmu_unmap_page(void * virtual);
 
@@ -48,9 +49,9 @@ static void mmu_unmap_page(void * virtual);
 static uint32_t * get_pt_address(uint32_t * translation_table, int index);
 
 // Gets the type bits for the specified small page type:
-static inline uint32_t small_page_type_bits(enum mmu_memory_type type);
+static inline uint32_t small_page_type_bits(enum mordax_memory_type type);
 // Gets the permission bits for the specified small page permissions:
-static inline uint32_t small_page_permission_bits(enum mmu_memory_permissions permissions);
+static inline uint32_t small_page_permission_bits(enum mordax_memory_permissions permissions);
 
 // ASID counter:
 static uint8_t asid = 0;
@@ -161,7 +162,7 @@ void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t 
 }
 
 void * mmu_map(physical_ptr physical, void * virtual, size_t size,
-	enum mmu_memory_type type, enum mmu_memory_permissions permissions)
+	enum mordax_memory_type type, enum mordax_memory_permissions permissions)
 {
 	size = (size + 4095) & -4096;
 	for(unsigned i = 0; i < size >> 12; ++i)
@@ -218,7 +219,7 @@ void * mmu_physical_to_virtual(physical_ptr physical)
 }
 
 static void * mmu_map_page(physical_ptr physical, void * virtual,
-	enum mmu_memory_type type, enum mmu_memory_permissions permissions)
+	enum mordax_memory_type type, enum mordax_memory_permissions permissions)
 {
 	uint32_t * table;
 	if((uint32_t) virtual >= MMU_KERNEL_SPLIT_ADDRESS)
@@ -295,7 +296,7 @@ static uint32_t * get_pt_address(uint32_t * translation_table, int index)
 		return mmu_physical_to_virtual((void *) (translation_table[index] & MMU_PAGE_TABLE_BASE_MASK));
 }
 
-static inline uint32_t small_page_type_bits(enum mmu_memory_type type)
+static inline uint32_t small_page_type_bits(enum mordax_memory_type type)
 {
 	switch(type)
 	{
@@ -318,7 +319,7 @@ static inline uint32_t small_page_type_bits(enum mmu_memory_type type)
 	}
 }
 
-static inline uint32_t small_page_permission_bits(enum mmu_memory_permissions permissions)
+static inline uint32_t small_page_permission_bits(enum mordax_memory_permissions permissions)
 {
 	switch(permissions)
 	{

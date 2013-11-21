@@ -6,7 +6,7 @@
 #define MORDAX_UTILS_H
 
 #include <stdbool.h>
-#include "types.h"
+#include "api/types.h"
 
 /**
  * Gets the base-2 logarithm of an unsigned integer.

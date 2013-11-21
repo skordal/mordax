@@ -10,9 +10,10 @@ MKIMAGE ?= mkimage
 RM      ?= rm
 
 # Build flags:
-TARGET_ASFLAGS += -Wall -g -O2 -ffreestanding -std=gnu11 -I$(TOPLEVEL)/kernel -DASSEMBLER
+TARGET_ASFLAGS += -Wall -g -O2 -ffreestanding -std=gnu11 -I$(TOPLEVEL)/kernel \
+	-I$(TOPLEVEL)/kernel/api -DASSEMBLER
 TARGET_CFLAGS  += -Wall -g -O2 -ffreestanding -std=gnu11 -I$(TOPLEVEL)/kernel \
-	-Werror=implicit-function-declaration
+	-I$(TOPLEVEL)/kernel/api -Werror=implicit-function-declaration
 TARGET_LDFLAGS += -nostdlib
 
 # Target independent source files:

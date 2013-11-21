@@ -5,7 +5,7 @@
 #ifndef MORDAX_QUEUE_H
 #define MORDAX_QUEUE_H
 
-#include "types.h"
+#include "api/types.h"
 
 /**
  * @defgroup queue Queue support

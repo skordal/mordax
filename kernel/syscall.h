@@ -5,8 +5,8 @@
 #ifndef MORDAX_SYSCALL_H
 #define MORDAX_SYSCALL_H
 
-#include "syscalls.h"
-#include "types.h"
+#include "api/syscalls.h"
+#include "api/types.h"
 
 /**
  * @defgroup syscalls System Call Support

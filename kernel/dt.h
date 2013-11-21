@@ -6,7 +6,7 @@
 #define MORDAX_DT_H
 
 #include <stdbool.h>
-#include "types.h"
+#include "api/types.h"
 
 /**
  * @defgroup dt Device Tree Support

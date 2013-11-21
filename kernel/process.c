@@ -14,7 +14,7 @@ static tid_t allocate_tid(struct process * p, struct thread * t);
 // Frees a thread ID for a thread.
 static void free_tid(struct process * p, tid_t tid);
 
-struct process * process_create(struct process_memory_map * memory_map)
+struct process * process_create(struct mordax_memory_map * memory_map)
 {
 	struct process * retval = mm_allocate(sizeof(struct process), MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
 	retval->num_threads = 0;

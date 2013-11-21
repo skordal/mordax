@@ -31,9 +31,9 @@ clean:
 %.o: %.S
 	$(TARGET_CC) -c $(TARGET_ASFLAGS) -o $@ $<
 
-%.o: %.c %.h types.h
+%.o: %.c %.h api/types.h
 	$(TARGET_CC) -c $(TARGET_CFLAGS) -o $@ $<
 
-%.o: %.c types.h
+%.o: %.c api/types.h
 	$(TARGET_CC) -c $(TARGET_CFLAGS) -o $@ $<
 

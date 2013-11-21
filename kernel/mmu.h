@@ -5,35 +5,13 @@
 #ifndef MORDAX_MMU_H
 #define MORDAX_MMU_H
 
-#include "types.h"
+#include "api/types.h"
+#include "api/memory.h"
 
 /**
  * @defgroup mmu MMU and Paging Functions
  * @{
  */
-
-/** Possible memory region types. */
-enum mmu_memory_type
-{
-	MMU_TYPE_CODE,
-	MMU_TYPE_RODATA,
-	MMU_TYPE_DATA,
-	MMU_TYPE_STACK,
-	MMU_TYPE_STRORD,
-	MMU_TYPE_DEVICE,
-	MMU_TYPE_UNCACHED
-};
-
-/** Possible memory access permissions. */
-enum mmu_memory_permissions
-{
-	MMU_PERM_RW_RW,
-	MMU_PERM_RW_RO,
-	MMU_PERM_RW_NA,
-	MMU_PERM_RO_RO,
-	MMU_PERM_RO_NA,
-	MMU_PERM_NA_NA,
-};
 
 /** Translation table type. */
 struct mmu_translation_table;
@@ -68,7 +46,7 @@ void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t 
  * @param permissions memory access permissions
  */
 void * mmu_map(physical_ptr physical, void * virtual, size_t size,
-	enum mmu_memory_type type, enum mmu_memory_permissions permissions);
+	enum mordax_memory_type type, enum mordax_memory_permissions permissions);
 
 /**
  * Maps a device for kernel use.

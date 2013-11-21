@@ -5,7 +5,7 @@
 #ifndef MORDAX_ABORT_H
 #define MORDAX_ABORT_H
 
-#include "types.h"
+#include "api/types.h"
 
 struct thread_context;
 

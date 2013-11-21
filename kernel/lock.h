@@ -5,7 +5,7 @@
 #ifndef MORDAX_LOCK_H
 #define MORDAX_LOCK_H
 
-#include "types.h"
+#include "api/types.h"
 
 /** Lock type. */
 typedef uint32_t lock_t;

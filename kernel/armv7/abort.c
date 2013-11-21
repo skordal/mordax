@@ -4,7 +4,7 @@
 
 #include "../abort.h"
 #include "../debug.h"
-#include "../types.h"
+#include "../api/types.h"
 
 #include "context.h"
 #include "registers.h"

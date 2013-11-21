@@ -5,7 +5,7 @@
 #ifndef MORDAX_KERNEL_H
 #define MORDAX_KERNEL_H
 
-#include "types.h"
+#include "api/types.h"
 
 /**
  * Initializes the kernel and starts the initial process.

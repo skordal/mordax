@@ -2,8 +2,8 @@
 // (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
-#ifndef MORDAX_SYSCALLS_H
-#define MORDAX_SYSCALLS_H
+#ifndef MORDAX_API_SYSCALLS_H
+#define MORDAX_API_SYSCALLS_H
 
 /** System syscall. Used for various administrative purposes. */
 #define SYSCALL_SYSTEM		0

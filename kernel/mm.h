@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "types.h"
+#include "api/types.h"
 
 /**
  * @defgroup mm_kernel Kernel Memory Management Functions
