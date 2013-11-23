@@ -3,6 +3,7 @@
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include "api/memory.h"
+#include "api/process.h"
 
 #include "context.h"
 #include "debug.h"
@@ -53,7 +54,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 	allocated_pids = rbtree_new(0, 0, 0);
 
 	// Create the idle process + thread:
-	struct process * idle_process = process_create(0);
+	struct process * idle_process = process_create(0, PROCESS_NO_PERMISSIONS, 0, 0);
 	idle_thread = process_add_new_thread(idle_process, (void *) idle_thread_loop, 0);
 	context_set_mode(idle_thread->context, CONTEXT_KERNELMODE);
 
@@ -83,7 +84,8 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 	};
 
 	// Create the initial process:
-	struct process * initial_process = process_create(&initproc_memory_map);
+	struct process * initial_process = process_create(&initproc_memory_map, PROCESS_ALL_PERMISSIONS,
+		0, 0);
 	mmu_set_user_translation_table(initial_process->translation_table, 0);
 
 	// Copy the initial process image:

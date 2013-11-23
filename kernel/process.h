@@ -25,7 +25,15 @@
  * @{
  */
 
-struct thread;
+/** Mask of all the possible permissions. */
+#define PROCESS_ALL_PERMISSIONS	0xffffffff
+/** Mask indicating no permissions. */
+#define PROCESS_NO_PERMISSIONS	0
+
+/** Permission bit allowing a process to create new processes. */
+#define PROCESS_PERMISSION_CREATE_PROC	(1 << 0)
+/** Permission bit allowing proceccess to map random memory. */
+#define PROCESS_PERMISSION_MMAP		(1 << 1)
 
 /** Default stack size. */
 #define PROCESS_DEFAULT_STACK_SIZE	CONFIG_DEFAULT_STACK_SIZE
@@ -40,6 +48,8 @@ struct thread;
  */
 #define PROCESS_START_ADDRESS	(void *) CONFIG_PAGE_SIZE
 
+struct thread;
+
 struct process
 {
 	struct mmu_translation_table * translation_table;
@@ -50,15 +60,20 @@ struct process
 	struct rbtree * allocated_tids;
 	tid_t next_tid;
 
+	uint32_t permissions;
+	gid_t owner_group;
+	uid_t owner_user;
 };
 
 /**
  * Creates a new process with the specified memory layout.
  * Memory is allocated and mapped according to the initial memory map.
  * @param memory_map a memory map containing the initial layout of the process.
+ * @param uid ID of the user owning the process.
+ * @param gid ID of the group owning the process.
  * @return the allocated process.
  */
-struct process * process_create(struct mordax_memory_map * memory_map);
+struct process * process_create(struct mordax_memory_map * memory_map, uid_t uid, gid_t gid, uint32_t permissions);
 
 /**
  * Frees a process.

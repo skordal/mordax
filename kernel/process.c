@@ -14,7 +14,7 @@ static tid_t allocate_tid(struct process * p, struct thread * t);
 // Frees a thread ID for a thread.
 static void free_tid(struct process * p, tid_t tid);
 
-struct process * process_create(struct mordax_memory_map * memory_map)
+struct process * process_create(struct mordax_memory_map * memory_map, uid_t uid, gid_t gid, uint32_t permissions)
 {
 	struct process * retval = mm_allocate(sizeof(struct process), MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
 	retval->num_threads = 0;
@@ -23,6 +23,10 @@ struct process * process_create(struct mordax_memory_map * memory_map)
 
 	retval->next_tid = 0;
 	retval->allocated_tids = rbtree_new(0, 0, 0);
+
+	retval->owner_group = gid;
+	retval->owner_user = uid;
+	retval->permissions = permissions;
 
 	debug_printf("Creating process translation table...\n");
 	retval->translation_table = mmu_create_translation_table();

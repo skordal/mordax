@@ -19,6 +19,11 @@ typedef int32_t pid_t;
 /** Thread identifier type. */
 typedef int32_t tid_t;
 
+/** Group ID type. */
+typedef int gid_t;
+/** User ID type. */
+typedef int uid_t;
+
 /** 64-bit generic big endian type. */
 typedef uint64_t be64;
 /** 32-bit generic big endian type. */
