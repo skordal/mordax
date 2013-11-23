@@ -18,16 +18,16 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 	// TODO: replace this switch with an array or something else more clever
 	switch(syscall)
 	{
-		case SYSCALL_SYSTEM:
+		case MORDAX_SYSCALL_SYSTEM:
 			syscall_system(context);
 			break;
-		case SYSCALL_THREAD_EXIT:
+		case MORDAX_SYSCALL_THREAD_EXIT:
 			syscall_thread_exit(context);
 			break;
-		case SYSCALL_THREAD_CREATE:
+		case MORDAX_SYSCALL_THREAD_CREATE:
 			syscall_thread_create(context);
 			break;
-		case SYSCALL_THREAD_JOIN:
+		case MORDAX_SYSCALL_THREAD_JOIN:
 			syscall_thread_join(context);
 			break;
 		default: // TODO: handle unrecognized system calls
