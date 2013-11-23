@@ -85,9 +85,10 @@ void syscall_thread_join(struct thread_context * context)
 	{
 		context_set_syscall_retval(active_thread->context, (void *) -1);
 		return;
-	} else
+	} else {
 		thread_add_exit_listener(join_thread, active_thread);
-	scheduler_move_thread_to_blocking(active_thread);
-	scheduler_reschedule();
+		scheduler_move_thread_to_blocking(active_thread);
+		scheduler_reschedule();
+	}
 }
 
