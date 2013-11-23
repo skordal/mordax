@@ -52,6 +52,7 @@ void intc_omap3_handle_irq(struct thread_context * context)
 	irq_handlers[active_irq](context, active_irq);
 
 	// Reset interrupt generation:
+	asm volatile("dsb\n\t");
 	memory[INTC_OMAP3_CONTROL] |= (1 << INTC_OMAP3_CONTROL_NEWIRQAGR);
 	asm volatile("dsb\n\t");
 }
