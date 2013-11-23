@@ -5,8 +5,9 @@
 #ifndef MORDAX_SYSCALL_H
 #define MORDAX_SYSCALL_H
 
+#include "context.h"
 #include "api/syscalls.h"
-#include "api/types.h"
+#include "api/thread.h"
 
 /**
  * @defgroup syscalls System Call Support
@@ -31,7 +32,7 @@ void syscall_thread_exit(struct thread_context * context);
  * for the new thread.
  * @param context process context information.
  */
-tid_t syscall_thread_create(struct thread_context * context);
+void syscall_thread_create(struct thread_context * context);
 
 /**
  * Thread join syscall handler. Takes the TID of the thread

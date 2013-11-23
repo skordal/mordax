@@ -25,7 +25,7 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 			syscall_thread_exit(context);
 			break;
 		case SYSCALL_THREAD_CREATE:
-			context_set_syscall_retval(context, (void *) syscall_thread_create(context));
+			syscall_thread_create(context);
 			break;
 		case SYSCALL_THREAD_JOIN:
 			syscall_thread_join(context);
@@ -57,14 +57,12 @@ void syscall_system(struct thread_context * context)
 
 void syscall_thread_exit(struct thread_context * context)
 {
-	// TODO: return the return value to waiting threads.
-
 	struct thread * removed_thread = scheduler_remove_thread(active_thread);
 	thread_free(removed_thread, (int) context_get_syscall_argument(context, 0));
 	scheduler_reschedule();
 }
 
-tid_t syscall_thread_create(struct thread_context * context)
+void syscall_thread_create(struct thread_context * context)
 {
 	void * entrypoint = context_get_syscall_argument(context, 0);
 	void * stack_ptr = context_get_syscall_argument(context, 1);
@@ -72,7 +70,7 @@ tid_t syscall_thread_create(struct thread_context * context)
 	struct thread * new_thread = process_add_new_thread(active_thread->parent, entrypoint, stack_ptr);
 	scheduler_add_thread(new_thread);
 
-	return new_thread->tid;
+	context_set_syscall_retval(context, (void *) new_thread->tid);
 }
 
 void syscall_thread_join(struct thread_context * context)
