@@ -33,7 +33,7 @@ void context_copy(struct thread_context * dest, struct thread_context * src)
 
 void * context_get_syscall_argument(struct thread_context * context, unsigned num)
 {
-	if(num > 2)
+	if(num > 3)
 		return 0;
 	else
 		return (void *) context->r[num];
