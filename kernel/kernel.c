@@ -14,8 +14,6 @@
 #include "drivers/interrupts/intc.h"
 #include "drivers/timer/timer.h"
 
-#include "lock.h"
-
 // Kernel device tree:
 static struct dt * kernel_dt;
 
@@ -49,7 +47,7 @@ void kernel_main(physical_ptr * device_tree, size_t dt_size)
 
 	// Map and parse the FDT passed from uboot and create a more accessible local version of it:
 	debug_printf("Parsing device tree... ");
-	struct fdt * uboot_fdt = mmu_map(device_tree, device_tree, dt_size, MMU_TYPE_DATA, MMU_PERM_RO_NA);
+	struct fdt * uboot_fdt = mmu_map(device_tree, device_tree, dt_size, MORDAX_TYPE_DATA, MORDAX_PERM_RO_NA);
 	kernel_dt = dt_parse(uboot_fdt);
 	if(kernel_dt == 0)
 		kernel_panic("could not parse the device tree");
@@ -68,7 +66,7 @@ void kernel_main(physical_ptr * device_tree, size_t dt_size)
 		kernel_panic("the 'memory' node is missing the 'reg' property");
 	debug_printf("%d Mb starting at %x physical\n\n", memory_data[1] >> 20, memory_data[0]);
 	mm_add_physical((physical_ptr) memory_data[0], (size_t) memory_data[1], MM_ZONE_NORMAL);
-	
+
 	// Reserve the memory currently in use from being allocated:
 	mm_reserve_physical(&load_address, (uint32_t) kernel_dataspace_end - (uint32_t) &kernel_address);
 

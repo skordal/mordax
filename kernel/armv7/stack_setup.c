@@ -25,7 +25,7 @@ void stacks_initialize(void)
 	stack_address = 0x00000000;
 	mm_allocate_physical(CONFIG_SYSTEM_STACK_SIZE, &stack_memory);
 	mmu_map(stack_memory.base, (void *) (stack_address - CONFIG_SYSTEM_STACK_SIZE),
-		CONFIG_SYSTEM_STACK_SIZE, MMU_TYPE_STACK, MMU_PERM_RW_NA);
+		CONFIG_SYSTEM_STACK_SIZE, MORDAX_TYPE_STACK, MORDAX_PERM_RW_NA);
 	asm volatile(
 		"cps %[svc_mode]\n\t"
 		"mov sp, %[stack_address]\n\t"
@@ -37,7 +37,7 @@ void stacks_initialize(void)
 	stack_address -= CONFIG_SYSTEM_STACK_SIZE - CONFIG_PAGE_SIZE;
 	mm_allocate_physical(CONFIG_SYSTEM_STACK_SIZE, &stack_memory);
 	mmu_map(stack_memory.base, (void *) (stack_address - CONFIG_SYSTEM_STACK_SIZE),
-		CONFIG_SYSTEM_STACK_SIZE, MMU_TYPE_STACK, MMU_PERM_RW_NA);
+		CONFIG_SYSTEM_STACK_SIZE, MORDAX_TYPE_STACK, MORDAX_PERM_RW_NA);
 	asm volatile(
 		"cps %[abt_mode]\n\t"
 		"mov sp, %[stack_address]\n\t"
@@ -49,7 +49,7 @@ void stacks_initialize(void)
 	stack_address -= CONFIG_SYSTEM_STACK_SIZE - CONFIG_PAGE_SIZE;
 	mm_allocate_physical(CONFIG_SYSTEM_STACK_SIZE, &stack_memory);
 	mmu_map(stack_memory.base, (void *) (stack_address - CONFIG_SYSTEM_STACK_SIZE),
-		CONFIG_SYSTEM_STACK_SIZE, MMU_TYPE_STACK, MMU_PERM_RW_NA);
+		CONFIG_SYSTEM_STACK_SIZE, MORDAX_TYPE_STACK, MORDAX_PERM_RW_NA);
 	asm volatile(
 		"cps %[und_mode]\n\t"
 		"mov sp, %[stack_address]\n\t"
@@ -61,7 +61,7 @@ void stacks_initialize(void)
 	stack_address -= CONFIG_SYSTEM_STACK_SIZE - CONFIG_PAGE_SIZE;
 	mm_allocate_physical(CONFIG_SYSTEM_STACK_SIZE, &stack_memory);
 	mmu_map(stack_memory.base, (void *) (stack_address - CONFIG_SYSTEM_STACK_SIZE),
-		CONFIG_SYSTEM_STACK_SIZE, MMU_TYPE_STACK, MMU_PERM_RW_NA);
+		CONFIG_SYSTEM_STACK_SIZE, MORDAX_TYPE_STACK, MORDAX_PERM_RW_NA);
 	asm volatile(
 		"cps %[irq_mode]\n\t"
 		"mov sp, %[stack_address]\n\t"
@@ -73,7 +73,7 @@ void stacks_initialize(void)
 	stack_address -= CONFIG_SYSTEM_STACK_SIZE - CONFIG_PAGE_SIZE;
 	mm_allocate_physical(CONFIG_SYSTEM_STACK_SIZE, &stack_memory);
 	mmu_map(stack_memory.base, (void *) (stack_address - CONFIG_SYSTEM_STACK_SIZE),
-		CONFIG_SYSTEM_STACK_SIZE, MMU_TYPE_STACK, MMU_PERM_RW_NA);
+		CONFIG_SYSTEM_STACK_SIZE, MORDAX_TYPE_STACK, MORDAX_PERM_RW_NA);
 	asm volatile(
 		"cps %[fiq_mode]\n\t"
 		"mov sp, %[stack_address]\n\t"

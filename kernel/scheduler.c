@@ -60,7 +60,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 
 	// Map the initial process:
 	uint8_t * initproc_image = mmu_map(initproc_start, initproc_start, initproc_size,
-		MMU_TYPE_DATA, MMU_PERM_RO_NA);
+		MORDAX_TYPE_DATA, MORDAX_PERM_RO_NA);
 
 	// Create process memory map for the initial process; only two memory zones are needed,
 	// one for the code and one for the stack.
@@ -68,14 +68,12 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 		{
 			.base = PROCESS_START_ADDRESS,
 			.size = initproc_size,
-			.type = MMU_TYPE_CODE,
-			.permissions = MMU_PERM_RW_RW,
+			.attributes = { MORDAX_TYPE_CODE, MORDAX_PERM_RW_RW },
 		},
 		{
 			.base = PROCESS_DEFAULT_STACK_BASE,
 			.size = PROCESS_DEFAULT_STACK_SIZE,
-			.type = MMU_TYPE_STACK,
-			.permissions = MMU_PERM_RW_RW,
+			.attributes = { MORDAX_TYPE_STACK, MORDAX_PERM_RW_RW },
 		}
 	};
 	struct mordax_memory_map initproc_memory_map = {

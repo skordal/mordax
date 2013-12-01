@@ -5,20 +5,20 @@
 #ifndef MORDAX_API_MEMORY_H
 #define MORDAX_API_MEMORY_H
 
-#include <types.h>
+#include "types.h"
 
 /**
  * Memory area types.
  */
 enum mordax_memory_type
 {
-	MMU_TYPE_CODE,
-	MMU_TYPE_RODATA,
-	MMU_TYPE_DATA,
-	MMU_TYPE_STACK,
-	MMU_TYPE_STRORD,
-	MMU_TYPE_DEVICE,
-	MMU_TYPE_UNCACHED
+	MORDAX_TYPE_CODE,
+	MORDAX_TYPE_RODATA,
+	MORDAX_TYPE_DATA,
+	MORDAX_TYPE_STACK,
+	MORDAX_TYPE_STRORD,
+	MORDAX_TYPE_DEVICE,
+	MORDAX_TYPE_UNCACHED
 };
 
 /**
@@ -26,12 +26,21 @@ enum mordax_memory_type
  */
 enum mordax_memory_permissions
 {
-	MMU_PERM_RW_RW,
-	MMU_PERM_RW_RO,
-	MMU_PERM_RW_NA,
-	MMU_PERM_RO_RO,
-	MMU_PERM_RO_NA,
-	MMU_PERM_NA_NA,
+	MORDAX_PERM_RW_RW,
+	MORDAX_PERM_RW_RO,
+	MORDAX_PERM_RW_NA,
+	MORDAX_PERM_RO_RO,
+	MORDAX_PERM_RO_NA,
+	MORDAX_PERM_NA_NA,
+};
+
+/**
+ * Structure describing the attributes of a memory area.
+ */
+struct mordax_memory_attributes
+{
+	enum mordax_memory_type type;
+	enum mordax_memory_permissions permissions;
 };
 
 /**
@@ -41,8 +50,7 @@ struct mordax_memory_zone
 {
 	void * base;					//< Base address of the memory zone
 	size_t size;					//< Size of the memory zone
-	enum mordax_memory_type type;			//< Type of the memory zone
-	enum mordax_memory_permissions permissions;	//< Permissions of the memory zone
+	struct mordax_memory_attributes attributes;	//< Attributes of the memory zone
 };
 
 /**

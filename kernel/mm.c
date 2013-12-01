@@ -221,7 +221,7 @@ static bool expand_heap(size_t size)
 	if(!mm_allocate_physical(size, &new_memory))
 		kernel_panic("out of memory");
 	mmu_map(new_memory.base, kernel_dataspace_end, new_memory.size,
-		MMU_TYPE_DATA, MMU_PERM_RW_NA);
+		MORDAX_TYPE_DATA, MORDAX_PERM_RW_NA);
 	kernel_dataspace_end = (void *) ((uint32_t) kernel_dataspace_end + (uint32_t) new_memory.size);
 
 	// Append the allocated memory to the last block (if unused):

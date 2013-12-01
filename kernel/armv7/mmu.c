@@ -179,7 +179,7 @@ void * mmu_map_device(physical_ptr physical, size_t size)
 	void * retval = next_device_address;
 	size = (size + 4095) & -4096;
 	next_device_address = (void *) ((uint32_t) next_device_address + size);
-	mmu_map(physical, retval, size, MMU_TYPE_DEVICE, MMU_PERM_RW_NA);
+	mmu_map(physical, retval, size, MORDAX_TYPE_DEVICE, MORDAX_PERM_RW_NA);
 	return retval;
 }
 
@@ -300,19 +300,19 @@ static inline uint32_t small_page_type_bits(enum mordax_memory_type type)
 {
 	switch(type)
 	{
-		case MMU_TYPE_CODE:
+		case MORDAX_TYPE_CODE:
 			return MMU_SMALL_PAGE_CODE;
-		case MMU_TYPE_RODATA:
+		case MORDAX_TYPE_RODATA:
 			return MMU_SMALL_PAGE_RODATA;
-		case MMU_TYPE_DATA:
+		case MORDAX_TYPE_DATA:
 			return MMU_SMALL_PAGE_DATA;
-		case MMU_TYPE_STACK:
+		case MORDAX_TYPE_STACK:
 			return MMU_SMALL_PAGE_STACK;
-		case MMU_TYPE_STRORD:
+		case MORDAX_TYPE_STRORD:
 			return MMU_SMALL_PAGE_STRORD;
-		case MMU_TYPE_DEVICE:
+		case MORDAX_TYPE_DEVICE:
 			return MMU_SMALL_PAGE_DEVICE;
-		case MMU_TYPE_UNCACHED:
+		case MORDAX_TYPE_UNCACHED:
 			return MMU_SMALL_PAGE_UNCACHED;
 		default:
 			return 0;
@@ -323,17 +323,17 @@ static inline uint32_t small_page_permission_bits(enum mordax_memory_permissions
 {
 	switch(permissions)
 	{
-		case MMU_PERM_RW_RW:
+		case MORDAX_PERM_RW_RW:
 			return MMU_SMALL_PAGE_RW_RW;
-		case MMU_PERM_RW_RO:
+		case MORDAX_PERM_RW_RO:
 			return MMU_SMALL_PAGE_RW_RO;
-		case MMU_PERM_RW_NA:
+		case MORDAX_PERM_RW_NA:
 			return MMU_SMALL_PAGE_RW_NA;
-		case MMU_PERM_RO_RO:
+		case MORDAX_PERM_RO_RO:
 			return MMU_SMALL_PAGE_RO_RO;
-		case MMU_PERM_RO_NA:
+		case MORDAX_PERM_RO_NA:
 			return MMU_SMALL_PAGE_RO_NA;
-		case MMU_PERM_NA_NA:
+		case MORDAX_PERM_NA_NA:
 			return MMU_SMALL_PAGE_NA_NA;
 		default:
 			return 0;

@@ -53,7 +53,7 @@ struct process * process_create(struct mordax_memory_map * memory_map, uid_t uid
 				// Map the allocated memory:
 				debug_printf("Mapping %x to %x\n", zone.base, (uint32_t) memory_map->zones[i].base + p * CONFIG_PAGE_SIZE);
 				mmu_map(zone.base, (void *) ((uint32_t) memory_map->zones[i].base + p * CONFIG_PAGE_SIZE),
-					zone.size, memory_map->zones[i].type, memory_map->zones[i].permissions);
+					zone.size, memory_map->zones[i].attributes.type, memory_map->zones[i].attributes.permissions);
 			}
 		}
 	}
