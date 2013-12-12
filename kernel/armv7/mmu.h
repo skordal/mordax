@@ -14,7 +14,10 @@
  */
 
 /** Address of the split between kernelspace and userspace addresses. */
-#define MMU_KERNEL_SPLIT_ADDRESS	0x80000000U
+#define MMU_KERNEL_SPLIT_ADDRESS	CONFIG_KERNEL_SPLIT
+#if MMU_KERNEL_SPLIT_ADDRESS != 0x80000000U
+#	error "The address of the userspace/kernel split must be 0x8000000!"
+#endif
 
 /**
  * @defgroup arm_mmu_pt Page Table Defines
