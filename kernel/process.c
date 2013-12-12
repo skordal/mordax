@@ -8,13 +8,14 @@
 #include "process.h"
 #include "rbtree.h"
 #include "scheduler.h"
+#include "utils.h"
 
 // Allocates a thread ID for a thread added to the process.
 static tid_t allocate_tid(struct process * p, struct thread * t);
 // Frees a thread ID for a thread.
 static void free_tid(struct process * p, tid_t tid);
 
-struct process * process_create(struct mordax_memory_map * memory_map, uid_t uid, gid_t gid, uint32_t permissions)
+struct process * process_create(struct mordax_process_info * procinfo)
 {
 	struct process * retval = mm_allocate(sizeof(struct process), MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
 	retval->num_threads = 0;
@@ -24,41 +25,109 @@ struct process * process_create(struct mordax_memory_map * memory_map, uid_t uid
 	retval->next_tid = 0;
 	retval->allocated_tids = rbtree_new(0, 0, 0);
 
-	retval->owner_group = gid;
-	retval->owner_user = uid;
-	retval->permissions = permissions;
+	retval->owner_group = procinfo->gid;
+	retval->owner_user = procinfo->uid;
+	retval->permissions = procinfo->permissions;
 
 	debug_printf("Creating process translation table...\n");
 	retval->translation_table = mmu_create_translation_table();
 
 	debug_printf("Setting translation table as current...\n");
-	mmu_set_user_translation_table(retval->translation_table, 0 /* PID does not matter here */);
+	mmu_set_user_translation_table(retval->translation_table, retval->pid);
 
-	if(memory_map != 0)
+	// Create the initial stack:
+	retval->stack_size = (procinfo->stack_length + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE;
+	int stack_pages = retval->stack_size / CONFIG_PAGE_SIZE;
+	for(int i = 0; i < stack_pages; ++i)
 	{
-		for(int i = 0; i < memory_map->num_zones; ++i)
+		struct mm_physical_memory mem;
+		if(!mm_allocate_physical(CONFIG_PAGE_SIZE, &mem))
 		{
-			// FIXME: currently only allocating one page at a time -> incredibly slow
-			// FIXME: write quicker allocator, but also allocate bigger chunks at a time
-			struct mm_physical_memory zone;
-			for(int p = 0; p < (memory_map->zones[i].size + CONFIG_PAGE_SIZE - 1) / CONFIG_PAGE_SIZE; ++p)
-			{
-				if(!mm_allocate_physical(CONFIG_PAGE_SIZE, &zone))
-				{
-					// TODO: free allocated/mapped memory.
-					debug_printf("Cannot create process, out of memory!\n");
-					return 0;
-				}
-
-				// Map the allocated memory:
-				debug_printf("Mapping %x to %x\n", zone.base, (uint32_t) memory_map->zones[i].base + p * CONFIG_PAGE_SIZE);
-				mmu_map(zone.base, (void *) ((uint32_t) memory_map->zones[i].base + p * CONFIG_PAGE_SIZE),
-					zone.size, memory_map->zones[i].attributes.type, memory_map->zones[i].attributes.permissions);
-			}
+			debug_printf("Error: cannot allocate physical memory for stack!\n");
+			goto _error_return;
 		}
+
+		debug_printf("\tMapping %x to %x for stack\n", mem.base,
+			PROCESS_DEFAULT_STACK_TOP - (i * CONFIG_PAGE_SIZE));
+		mmu_map(mem.base, (void *) (PROCESS_DEFAULT_STACK_TOP - (i * CONFIG_PAGE_SIZE)),
+			mem.size, MORDAX_TYPE_STACK, MORDAX_PERM_RW_RW);
 	}
 
+	// Copy the initial stack contents:
+	if(!mmu_check_access(procinfo->stack_init, procinfo->stack_init_length, MMU_ACCESS_READ, true))
+	{
+		debug_printf("Error: cannot copy initial stack contents, access to memory is forbidden!\n");
+		goto _error_return;
+	} else
+		memcpy(PROCESS_DEFAULT_STACK_TOP - procinfo->stack_init_length, procinfo->stack_init,
+			procinfo->stack_init_length);
+
+	// Create the process image:
+	size_t image_size = (procinfo->source_length + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE;
+	int text_pages = procinfo->text_length / CONFIG_PAGE_SIZE;
+	int rodata_pages = procinfo->rodata_length / CONFIG_PAGE_SIZE;
+	int data_pages = procinfo->data_length / CONFIG_PAGE_SIZE;
+
+	if(text_pages + rodata_pages + data_pages < image_size / CONFIG_PAGE_SIZE)
+	{
+		debug_printf("Error: mismatch between section sizes and image size\n");
+		goto _error_return;
+	}
+
+	// Allocate process memory:
+	for(int i = 0; i < text_pages + rodata_pages + data_pages; ++i)
+	{
+		const int rodata_boundary = 1 + text_pages;
+		const int data_boundary = 1 + text_pages + rodata_pages;
+
+		struct mm_physical_memory mem;
+		if(!mm_allocate_physical(CONFIG_PAGE_SIZE, &mem))
+		{
+			debug_printf("Error: cannot allocate physical memory for process image!\n");
+			goto _error_return;
+		}
+
+		enum mordax_memory_type type;
+		enum mordax_memory_permissions permissions;
+
+		if(i + 1 >= data_boundary)
+		{
+			type = MORDAX_TYPE_DATA;
+			permissions = MORDAX_PERM_RW_RW;
+			debug_printf("Mapping data memory:\n\t");
+		} else if(i + 1 >= rodata_boundary)
+		{
+			type = MORDAX_TYPE_RODATA;
+			permissions = MORDAX_PERM_RW_RO;
+			debug_printf("Mapping rodata memory:\n\t");
+		} else {
+			type = MORDAX_TYPE_CODE;
+			permissions = MORDAX_PERM_RW_RO;
+			debug_printf("Mapping code memory:\n\t");
+		}
+
+		debug_printf("Mapping %x to %x\n", mem.base, (i + 1) * CONFIG_PAGE_SIZE);
+		mmu_map(mem.base, (void *) ((i + 1) * CONFIG_PAGE_SIZE), mem.size,
+			type, permissions);
+	}
+
+	// Copy the process image:
+	if(!mmu_check_access(procinfo->source, procinfo->source_length, MMU_ACCESS_READ, true))
+	{
+		debug_printf("Error: cannot copy process image, access to memory is forbidden!\n");
+		goto _error_return;
+	} else
+		memcpy((void *) 0x1000, procinfo->source, procinfo->source_length);
+
 	return retval;
+
+_error_return:
+	rbtree_free(retval->allocated_tids, 0, 0);
+	scheduler_free_pid(retval->pid);
+	queue_free(retval->threads, 0);
+	mm_free(retval);
+	mmu_free_translation_table(retval->translation_table);
+	return 0;
 }
 
 void process_free(struct process * p)
@@ -66,8 +135,8 @@ void process_free(struct process * p)
 	debug_printf("Freeing process %d\n", p->pid);
 	queue_free(p->threads, (queue_data_free_func) thread_free);
 	scheduler_free_pid(p->pid);
-	rbtree_free(p->allocated_tids, 0);
-	// TODO: add support for freeing the translation table and physical memory
+	rbtree_free(p->allocated_tids, 0, 0);
+	mmu_free_translation_table(p->translation_table);
 }
 
 void process_add_thread(struct process * p, struct thread * t)

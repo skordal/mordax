@@ -43,24 +43,5 @@ struct mordax_memory_attributes
 	enum mordax_memory_permissions permissions;
 };
 
-/**
- * Structure describing a zone of memory.
- */
-struct mordax_memory_zone
-{
-	void * base;					//< Base address of the memory zone
-	size_t size;					//< Size of the memory zone
-	struct mordax_memory_attributes attributes;	//< Attributes of the memory zone
-};
-
-/**
- * Structure used for describing the initial memory map of a process.
- */
-struct mordax_memory_map
-{
-	int num_zones;				//< Number of memory zones in the memory map.
-	struct mordax_memory_zone * zones;	//< Pointer to an array of the memory zones.
-};
-
 #endif
 

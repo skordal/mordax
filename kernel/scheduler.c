@@ -54,40 +54,34 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 	allocated_pids = rbtree_new(0, 0, 0);
 
 	// Create the idle process + thread:
-	struct process * idle_process = process_create(0, PROCESS_NO_PERMISSIONS, 0, 0);
+	struct mordax_process_info idle_process_info = {
+		.entry_point = (void *) idle_thread_loop,
+		.permissions = MORDAX_PROCESS_NO_PERMISSIONS
+	};
+	struct process * idle_process = process_create(&idle_process_info);
+	if(idle_process == 0)
+		kernel_panic("could not create idle process");
 	idle_thread = process_add_new_thread(idle_process, (void *) idle_thread_loop, 0);
+	if(idle_thread == 0)
+		kernel_panic("could not create idle thread");
 	context_set_mode(idle_thread->context, CONTEXT_KERNELMODE);
 
 	// Map the initial process:
 	uint8_t * initproc_image = mmu_map(initproc_start, initproc_start, initproc_size,
-		MORDAX_TYPE_DATA, MORDAX_PERM_RO_NA);
-
-	// Create process memory map for the initial process; only two memory zones are needed,
-	// one for the code and one for the stack.
-	struct mordax_memory_zone initproc_datazones[] = {
-		{
-			.base = PROCESS_START_ADDRESS,
-			.size = initproc_size,
-			.attributes = { MORDAX_TYPE_CODE, MORDAX_PERM_RW_RW },
-		},
-		{
-			.base = PROCESS_DEFAULT_STACK_BASE,
-			.size = PROCESS_DEFAULT_STACK_SIZE,
-			.attributes = { MORDAX_TYPE_STACK, MORDAX_PERM_RW_RW },
-		}
-	};
-	struct mordax_memory_map initproc_memory_map = {
-		.num_zones = 2,
-		.zones = initproc_datazones,
-	};
+		MORDAX_TYPE_DATA, MORDAX_PERM_RO_RO);
 
 	// Create the initial process:
-	struct process * initial_process = process_create(&initproc_memory_map, PROCESS_ALL_PERMISSIONS,
-		0, 0);
-	mmu_set_user_translation_table(initial_process->translation_table, 0);
-
-	// Copy the initial process image:
-	memcpy(PROCESS_START_ADDRESS, initproc_image, initproc_size);
+	struct mordax_process_info initproc_info = {
+		.entry_point = (void *) 0x1000,
+		.stack_length = PROCESS_DEFAULT_STACK_SIZE,
+		.permissions = MORDAX_PROCESS_ALL_PERMISSIONS,
+		.source = initproc_image,
+		.source_length = initproc_size,
+		.text_length = (initproc_size + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE,
+	};
+	struct process * initial_process = process_create(&initproc_info);
+	if(initial_process == 0)
+		kernel_panic("could not create the initial process");
 
 	// Unmap the initial process:
 	mmu_unmap(initproc_image, initproc_size);

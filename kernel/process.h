@@ -10,6 +10,7 @@
 #include "rbtree.h"
 
 #include "api/memory.h"
+#include "api/process.h"
 #include "api/types.h"
 
 #ifndef CONFIG_DEFAULT_STACK_SIZE
@@ -20,27 +21,17 @@
 #error "user-space base address not set, define CONFIG_DEFAULT_STACK_BASE with the proper stack base"
 #endif
 
+/** Default stack size. */
+#define PROCESS_DEFAULT_STACK_SIZE	CONFIG_DEFAULT_STACK_SIZE
+/** Default stack base address. */
+#define PROCESS_DEFAULT_STACK_BASE	CONFIG_DEFAULT_STACK_BASE
+/** Top of the default stack. */
+#define PROCESS_DEFAULT_STACK_TOP	(CONFIG_DEFAULT_STACK_BASE + CONFIG_DEFAULT_STACK_SIZE)
+
 /**
  * @defgroup process Process Support
  * @{
  */
-
-/** Mask of all the possible permissions. */
-#define PROCESS_ALL_PERMISSIONS	0xffffffff
-/** Mask indicating no permissions. */
-#define PROCESS_NO_PERMISSIONS	0
-
-/** Permission bit allowing a process to create new processes. */
-#define PROCESS_PERMISSION_CREATE_PROC	(1 << 0)
-/** Permission bit allowing proceccess to map random memory. */
-#define PROCESS_PERMISSION_MMAP		(1 << 1)
-
-/** Default stack size. */
-#define PROCESS_DEFAULT_STACK_SIZE	CONFIG_DEFAULT_STACK_SIZE
-/** Default stack base address. */
-#define PROCESS_DEFAULT_STACK_BASE	(void *) CONFIG_DEFAULT_STACK_BASE
-/** Top of the default stack. */
-#define PROCESS_DEFAULT_STACK_TOP	(void *) (CONFIG_DEFAULT_STACK_BASE + CONFIG_DEFAULT_STACK_SIZE)
 
 /**
  * Default process start address. One page at address 0 is reserved in order
@@ -63,6 +54,8 @@ struct process
 	uint32_t permissions;
 	gid_t owner_group;
 	uid_t owner_user;
+
+	size_t stack_size;
 };
 
 /**
@@ -73,7 +66,7 @@ struct process
  * @param gid ID of the group owning the process.
  * @return the allocated process.
  */
-struct process * process_create(struct mordax_memory_map * memory_map, uid_t uid, gid_t gid, uint32_t permissions);
+struct process * process_create(struct mordax_process_info * procinfo);
 
 /**
  * Frees a process.
