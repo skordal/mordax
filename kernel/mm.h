@@ -110,7 +110,6 @@ void mm_object_stack_expand(struct mm_object_stack * s);
 void mm_object_stack_destroy(struct mm_object_stack * s);
 
 /** @} */
-
 /** @} */
 
 /**
@@ -145,6 +144,14 @@ void mm_add_physical(physical_ptr address, size_t size, unsigned int flags);
  * @return `true` if memory could be allocated or `false` if no memory was available.
  */
 bool mm_allocate_physical(size_t size, struct mm_physical_memory * retval);
+
+/**
+ * Checks if a physical address is managed by the physical memory manager.
+ * @param address the address to check for.
+ * @return `true` if the address is managed by the memory manager, `false`
+ *         otherwise.
+ */
+bool mm_is_physical_managed(physical_ptr address);
 
 /**
  * Frees a chunk of physical memory.

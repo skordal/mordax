@@ -399,6 +399,21 @@ static physical_ptr mm_allocate_order(struct memory_zone * zone, unsigned order)
 		return 0;
 }
 
+bool mm_is_physical_managed(physical_ptr address)
+{
+	struct memory_zone * zone = physical_memory_list;
+	uint32_t test_address = (uint32_t) address;
+
+	while(zone != 0)
+	{
+		if(test_address >= (uint32_t) zone->start && test_address < (uint32_t) zone->start + zone->size)
+			return true;
+		zone = zone->next;
+	}
+
+	return false;
+}
+
 void mm_free_physical(struct mm_physical_memory * block)
 {
 	struct memory_zone * zone = physical_memory_list;
