@@ -183,6 +183,12 @@ void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t 
 	);
 }
 
+bool mmu_check_access(void * address, size_t size, enum mmu_access_type access, bool user)
+{
+	// TODO: implement access permission checking.
+	return true;
+}
+
 void * mmu_map(physical_ptr physical, void * virtual, size_t size,
 	enum mordax_memory_type type, enum mordax_memory_permissions permissions)
 {

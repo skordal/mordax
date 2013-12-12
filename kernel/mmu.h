@@ -13,6 +13,11 @@
  * @{
  */
 
+enum mmu_access_type
+{
+	MMU_ACCESS_READ, MMU_ACCESS_WRITE,
+};
+
 /** Translation table type. */
 struct mmu_translation_table;
 
@@ -40,6 +45,17 @@ void mmu_free_translation_table(struct mmu_translation_table * table);
  * @param pid the PID of the process.
  */
 void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t pid);
+
+/**
+ * Checks if the specified virtual address is accessible.
+ * @param address the address to check.
+ * @param size size of the access.
+ * @param access the type of access to check for.
+ * @param user `true` if the access is a user-mode access.
+ * @return `true` if the access is permitted, `false` otherwise.
+ */
+bool mmu_check_access(void * address, size_t size, enum mmu_access_type access,
+	bool user);
 
 /**
  * Creates a memory mapping. The address is mapped in either the userspace
