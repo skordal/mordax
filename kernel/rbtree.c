@@ -26,7 +26,7 @@ struct rbtree
 };
 
 static void free_node_recursively(struct rbtree * tree, struct rbtree_node * node,
-	rbtree_data_free_func free_func);
+	rbtree_key_free_func key_free_func, rbtree_data_free_func data_free_func);
 static void insert_fixup(struct rbtree * tree, struct rbtree_node * z);
 static void left_rotate(struct rbtree * tree, struct rbtree_node * node);
 static void right_rotate(struct rbtree * tree, struct rbtree_node * node);
@@ -57,23 +57,29 @@ struct rbtree * rbtree_new(rbtree_key_compare_func key_compare, rbtree_key_free_
 	return retval;
 }
 
-void rbtree_free(struct rbtree * tree, rbtree_data_free_func free_func)
+void rbtree_free(struct rbtree * tree, rbtree_key_free_func key_free_func,
+	rbtree_data_free_func data_free_func)
 {
 	if(tree->root != 0)
-		free_node_recursively(tree, tree->root, free_func);
+		free_node_recursively(tree, tree->root, key_free_func, data_free_func);
 	mm_free(tree->nil);
 }
 
 static void free_node_recursively(struct rbtree * tree, struct rbtree_node * node,
-	rbtree_data_free_func free_func)
+	rbtree_key_free_func key_free_func, rbtree_data_free_func data_free_func)
 {
 	if(node->left != tree->nil)
-		free_node_recursively(tree, node->left, free_func);
+		free_node_recursively(tree, node->left, key_free_func, data_free_func);
 	if(node->right != tree->nil)
-		free_node_recursively(tree, node->right, free_func);
+		free_node_recursively(tree, node->right, key_free_func, data_free_func);
 
-	if(free_func)
-		free_func(node->data);
+	if(key_free_func)
+		key_free_func(node->key);
+	else if(tree->free_key)
+		tree->free_key(node->key);
+
+	if(data_free_func)
+		data_free_func(node->data);
 	if(tree->free_key)
 		tree->free_key(node->key);
 	mm_free(node);
