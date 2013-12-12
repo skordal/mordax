@@ -12,7 +12,7 @@
  * @param device_tree pointer to the physical address of the device tree.
  * @param dt_size size of the device tree.
  */
-void kernel_main(physical_ptr * device_tree, size_t dt_size);
+void kernel_main(physical_ptr * device_tree, size_t dt_size) __attribute((noreturn));
 
 /**
  * Causes a kernel panic.
