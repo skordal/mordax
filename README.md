@@ -19,12 +19,12 @@ Beware, that until there is a stable release, there may be issues in the code ca
 The Microkernel
 ---------------
 
-The microkernel is a work in progress and is changing rapidly. It can currently only run very simple programmes, seeing as it only supports two system calls.
+The microkernel is a work in progress and is changing rapidly. It can currently only run very simple test programmes.
 
 The Applications
 ----------------
 
-* syscall_test - a simple application designed to test the implemented system calls.
+Only simple kernel test applications are available at the moment.
 
 The Libraries
 -------------
