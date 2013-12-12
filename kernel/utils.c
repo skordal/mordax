@@ -51,9 +51,15 @@ bool str_equals(const char * a, const char * b)
 
 void memclr(void * restrict memory, size_t length)
 {
+	memset(memory, 0, length);
+}
+
+void * memset(void * restrict memory, char value, size_t length)
+{
 	char * s = memory;
 	for(int i = 0; i < length; ++i)
-		s[i] = 0;
+		s[i] = value;
+	return memory;
 }
 
 void memcpy(void * dest, void * src, size_t length)

@@ -58,6 +58,16 @@ bool str_equals(const char * a, const char * b)
  * @param length length of the memory area to clear.
  */
 void memclr(void * restrict memory, size_t length)
+	__attribute((weak,deprecated));
+
+/**
+ * Fills a memory area with a specific value.
+ * @param memory the memory area to fill.
+ * @param value the value to fill the memory area with.
+ * @param length the length of the area to fill.
+ * @return the area filled.
+ */
+void * memset(void * restrict memory, char value, size_t length)
 	__attribute((weak));
 
 /**
