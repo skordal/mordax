@@ -5,26 +5,17 @@
 #ifndef MORDAX_API_SYSCALLS_H
 #define MORDAX_API_SYSCALLS_H
 
-/** System syscall. Used for various administrative purposes. */
+/*
+ * This file contains a list of the system calls supported by the kernel.
+ * A description of each system call can be found in the `mordax.h` header
+ * of the Mordax library.
+ */
+
 #define MORDAX_SYSCALL_SYSTEM		0
-
-/** Thread exit syscall. This exits and frees the calling thread. */
 #define MORDAX_SYSCALL_THREAD_EXIT	1
-
-/**
- * Thread creation syscall. This syscall takes two parameters,
- * a pointer to the entry point of the new thread and a pointer to
- * the top of the stack for the thread. It returns the thread
- * ID of the newly created thread, or -1 if an error occurs.
- */
 #define MORDAX_SYSCALL_THREAD_CREATE	2
-
-/**
- * Thread join syscall. Takes one parameter, the thread ID
- * of the thread to wait for. Blocks until the specified thread
- * terminates.
- */
 #define MORDAX_SYSCALL_THREAD_JOIN	3
+#define MORDAX_SYSCALL_THREAD_INFO	4
 
 #endif
 

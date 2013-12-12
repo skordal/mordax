@@ -6,8 +6,6 @@
 #define MORDAX_SYSCALL_H
 
 #include "context.h"
-#include "api/syscalls.h"
-#include "api/thread.h"
 
 /**
  * @defgroup syscalls System Call Support
@@ -42,6 +40,12 @@ void syscall_thread_create(struct thread_context * context);
  * @param context process context information.
  */
 void syscall_thread_join(struct thread_context * context);
+
+/**
+ * Thread information syscall handler. Takes an integer parameter
+ * specifying the information to return.
+ */
+void syscall_thread_info(struct thread_context * context);
 
 /** @} */
 

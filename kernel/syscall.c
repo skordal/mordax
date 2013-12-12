@@ -9,6 +9,9 @@
 #include "syscall.h"
 #include "thread.h"
 
+#include "api/syscalls.h"
+#include "api/thread.h"
+
 // System call handler, called by target assembly code:
 void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 {
@@ -89,6 +92,30 @@ void syscall_thread_join(struct thread_context * context)
 		thread_add_exit_listener(join_thread, active_thread);
 		scheduler_move_thread_to_blocking(active_thread);
 		scheduler_reschedule();
+	}
+}
+
+void syscall_thread_info(struct thread_context * context)
+{
+	int function = (int) context_get_syscall_argument(context, 0);
+
+	switch(function)
+	{
+		case MORDAX_THREAD_INFO_GET_TID:
+			context_set_syscall_retval(context, (void *) active_thread->tid);
+			break;
+		case MORDAX_THREAD_INFO_GET_PID:
+			context_set_syscall_retval(context, (void *) active_thread->parent->pid);
+			break;
+		case MORDAX_THREAD_INFO_GET_UID:
+			context_set_syscall_retval(context, (void *) active_thread->parent->owner_user);
+			break;
+		case MORDAX_THREAD_INFO_GET_GID:
+			context_set_syscall_retval(context, (void *) active_thread->parent->owner_group);
+			break;
+		default:
+			context_set_syscall_retval(context, (void *) -1);
+			break;
 	}
 }
 
