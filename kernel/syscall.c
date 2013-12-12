@@ -10,6 +10,7 @@
 #include "thread.h"
 
 #include "api/syscalls.h"
+#include "api/system.h"
 #include "api/thread.h"
 
 // System call handler, called by target assembly code:
@@ -41,17 +42,20 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 
 void syscall_system(struct thread_context * context)
 {
-	int function = context_get_syscall_argument(context, 0);
+	int function = (int) context_get_syscall_argument(context, 0);
 
 	switch(function)
 	{
-		case 0:
+		case MORDAX_SYSTEM_DEBUG:
 		{
 			const char * string = context_get_syscall_argument(context, 1);
 			debug_printf("[SYSCALL0: DEBUG] PID %d, TID %d: %s\n", active_thread->parent->pid,
 				active_thread->tid, string);
 			break;
 		}
+		case MORDAX_SYSTEM_GETSPLIT:
+			context_set_syscall_retval(context, (void *) CONFIG_KERNEL_SPLIT);
+			break;
 		default:
 			debug_printf("Unknown function for the system syscall: %d\n", function);
 			break;
@@ -78,7 +82,6 @@ void syscall_thread_create(struct thread_context * context)
 
 void syscall_thread_join(struct thread_context * context)
 {
-	tid_t retval = (tid_t) context_get_syscall_argument(context, 0);
 	debug_printf("PID %d, TID %d wants to join with TID %d\n", active_thread->parent->pid,
 		active_thread->tid, (tid_t) context_get_syscall_argument(context, 0));
 
