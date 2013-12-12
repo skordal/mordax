@@ -38,6 +38,10 @@ void * next_device_address = (void *) 0xf0000000;
 // Stack for allocating page tables:
 struct mm_object_stack * pt_stack;
 
+// Function called for each entry in a translation table lookup tree when
+// freeing a translation table:
+static void free_table_entry(void *);
+
 // Maps one page of memory:
 static void * mmu_map_page(physical_ptr physical, void * virtual,
 	enum mordax_memory_type type, enum mordax_memory_permissions permissions);
@@ -123,6 +127,21 @@ struct mmu_translation_table * mmu_create_translation_table(void)
 	retval->asid = ++asid; // TODO: check that the ASID is unused
 
 	return retval;
+}
+
+void mmu_free_translation_table(struct mmu_translation_table * table)
+{
+	rbtree_free(table->lookup_table, free_table_entry, 0);
+	mm_free(table);
+}
+
+static void free_table_entry(void * address)
+{
+	struct mm_physical_memory memory = { .base = address, .size = CONFIG_PAGE_SIZE };
+
+	// If the memory is managed by the physical memory manager, free it:
+	if(mm_is_physical_managed(address))
+		mm_free_physical(&memory);
 }
 
 void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t pid)

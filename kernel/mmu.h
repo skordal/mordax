@@ -26,6 +26,14 @@ void mmu_initialize(void);
 struct mmu_translation_table * mmu_create_translation_table(void);
 
 /**
+ * Deletes a translation table for application use.
+ * Any memory allocated using the physical memory manager is returned to the
+ * free memory pool automatically. Other mapped memory is not freed in any way.
+ * @param table the translation table to free.
+ */
+void mmu_free_translation_table(struct mmu_translation_table * table);
+
+/**
  * Sets the current application translation table. This is used during
  * context switching to change translation tables.
  * @param table the new translation table.
