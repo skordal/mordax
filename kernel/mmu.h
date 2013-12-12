@@ -57,6 +57,16 @@ void * mmu_map(physical_ptr physical, void * virtual, size_t size,
 	enum mordax_memory_type type, enum mordax_memory_permissions permissions);
 
 /**
+ * Changes the permissions for an interval of virtual memory.
+ * @param virtual the virtual address of the page to change permissions for.
+ * @param size the size of the memory range to remap.
+ * @param type new type for the page.
+ * @param permissions new permissions for the page.
+ */
+void mmu_remap(void * virtual, size_t size, enum mordax_memory_type type,
+	enum mordax_memory_permissions permissions);
+
+/**
  * Maps a device for kernel use.
  * @param physical physical address of the device memory to map.
  * @param size size of the mapping to create.

@@ -47,6 +47,9 @@ static void * mmu_map_page(physical_ptr physical, void * virtual,
 	enum mordax_memory_type type, enum mordax_memory_permissions permissions);
 // Unmaps one page of memory:
 static void mmu_unmap_page(void * virtual);
+// Changes the permissions for one page of memory:
+static void mmu_remap_page(void * virtual, enum mordax_memory_type type,
+	enum mordax_memory_permissions permissions);
 
 // Gets the virtual address of the page table the specified entry in a
 // translation table points to, or 0 if none:
@@ -191,6 +194,42 @@ void * mmu_map(physical_ptr physical, void * virtual, size_t size,
 	}
 
 	return virtual;
+}
+
+void mmu_remap(void * virtual, size_t size, enum mordax_memory_type type,
+	enum mordax_memory_permissions permissions)
+{
+	size = (size + 4095) & -4096;
+	for(unsigned i = 0; i < size >> 12; ++i)
+		mmu_remap_page((void *) ((uint32_t) virtual + (i << 12)), type,
+			permissions);
+}
+
+static void mmu_remap_page(void * virtual, enum mordax_memory_type type,
+	enum mordax_memory_permissions permissions)
+{
+	virtual = (void *) ((uint32_t) virtual & -4096);
+
+	uint32_t * table;
+	if((uint32_t) virtual >= MMU_KERNEL_SPLIT_ADDRESS)
+		table = kernel_translation_table;
+	else
+		table = user_translation_table->table;
+	uint32_t * page_table = get_pt_address(table, (uint32_t) virtual >> 20);
+
+	if(page_table == 0) // If there is no page table, return.
+		return;
+	if((page_table[((uint32_t) virtual & 0xfffff) >> 12] & 3) == 0) // If there is no entry, return.
+		return;
+
+	uint32_t physical = page_table[((uint32_t) virtual & 0xfffff) >> 12] & MMU_SMALL_PAGE_BASE_MASK;
+	debug_printf("Altering mapping of %x -> %x...\n", physical, virtual);
+
+	uint32_t entry = physical | MMU_SMALL_PAGE_TYPE |
+		small_page_type_bits(type) | small_page_permission_bits(permissions);
+	if((uint32_t) virtual < MMU_KERNEL_SPLIT_ADDRESS)
+		entry |= 1 << MMU_SMALL_PAGE_NG; // Set the not-global bit for userspace pages.
+	page_table[((uint32_t) virtual & 0xfffff) >> 12] = entry;
 }
 
 void * mmu_map_device(physical_ptr physical, size_t size)
