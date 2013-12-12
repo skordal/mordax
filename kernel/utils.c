@@ -49,11 +49,6 @@ bool str_equals(const char * a, const char * b)
 	return true;
 }
 
-void memclr(void * restrict memory, size_t length)
-{
-	memset(memory, 0, length);
-}
-
 void * memset(void * restrict memory, char value, size_t length)
 {
 	char * s = memory;
