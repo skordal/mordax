@@ -46,21 +46,22 @@ void context_set_syscall_retval(struct thread_context * context, void * value)
 
 void context_print(struct thread_context * context)
 {
+	debug_printf("Register contents:\n");
 	for(int i = 0; i < 15; i += 4)
 	{
 		if(i + 3 < 15)
-			debug_printf("r%d: %x\tr%d: %x\tr%d: %x\tr%d: %x\n",
+			debug_printf("\tr%d: %x\tr%d: %x\tr%d: %x\tr%d: %x\n",
 				i, context->r[i],
 				i + 1, context->r[i + 1],
 				i + 2, context->r[i + 2],
 				i + 3, context->r[i + 3]);
 		else
-			debug_printf("r%d: %x\tr%d: %x\tr%d: %x\n",
+			debug_printf("\tr%d: %x\tr%d: %x\tr%d: %x\n",
 				i, context->r[i],
 				i + 1, context->r[i + 1],
 				i + 2, context->r[i + 2]);
 	}
-	debug_printf("PC: %x\tSPSR: %x\n", context->pc, context->spsr);
+	debug_printf("\tPC: %x\tSPSR: %x\n", context->pc, context->spsr);
 }
 
 void context_set_mode(struct thread_context * context, enum context_processor_mode mode)
