@@ -8,8 +8,13 @@ ifeq ($(TOPLEVEL),)
         $(error "Please run make from the toplevel directory.")
 endif
 
+# Application flags:
+TARGET_CFLAGS += -I$(TOPLEVEL)/libraries/mordax -O2 -Wall -std=gnu11
+TARGET_LDFLAGS += -L$(TOPLEVEL)/libraries/mordax
+
 # List of applications to build:
-APPLICATIONS ?=
+APPLICATIONS ?= \
+	mt_test
 .PHONY: all clean $(APPLICATIONS)
 
 all: $(APPLICATIONS)
@@ -19,6 +24,9 @@ clean:
 		$(MAKE) -C $$dir clean; \
 	done
 
-$(APPLICATIONS):
+simple-crt0.o: simple-crt0.S
+	$(TARGET_CC) -c $(TARGET_CFLAGS) -o simple-crt0.o simple-crt0.S
+
+$(APPLICATIONS): simple-crt0.o
 	@$(MAKE) -C $@
 
