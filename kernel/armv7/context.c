@@ -75,7 +75,7 @@ void context_set_mode(struct thread_context * context, enum context_processor_mo
 
 void context_set_pc(struct thread_context * context, void * pc)
 {
-	context->pc = (uint32_t) pc + 4;
+	context->pc = (uint32_t) pc;
 }
 
 void context_set_sp(struct thread_context * context, void * sp)

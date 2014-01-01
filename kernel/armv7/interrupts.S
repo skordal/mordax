@@ -59,7 +59,9 @@ int_software_interrupt:
 
 	@ Call the interrupt handler:
 	mov r0, sp
+	push {lr}
 	bl syscall_interrupt_handler
+	pop {lr}
 
 	restore_context
 	movs pc, lr
@@ -68,30 +70,33 @@ int_software_interrupt:
 .global int_prefetch_abort
 .type int_prefetch_abort, %function
 int_prefetch_abort:
+	sub lr, #4
 	store_context
 
 	mov r0, sp
 	bl abort_handler
 
 	restore_context
-	subs pc, lr, #4
+	movs pc, lr
 
 @ Data abort exception handler.
 .global int_data_abort
 .type int_data_abort, %function
 int_data_abort:
+	sub lr, #4
 	store_context
 
 	mov r0, sp
 	bl abort_handler
 
 	restore_context
-	subs pc, lr, #4
+	movs pc, lr
 
 @ IRQ exception handler.
 .global int_irq
 .type int_irq, %function
 int_irq:
+	sub lr, #4
 	store_context
 
 	@ Pass a pointer to the stored context data to the handler function:
@@ -102,7 +107,7 @@ int_irq:
 	pop {lr}
 
 	restore_context
-	subs pc, lr, #4
+	movs pc, lr
 
 @ FIQ exception handler.
 .global int_fiq
