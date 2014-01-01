@@ -15,7 +15,7 @@ TARGET_CFLAGS  += $(CONFIG)
 OBJECT_FILES   := $(ASSEMBLER_FILES:.S=.o) $(SOURCE_FILES:.c=.o)
 
 all: $(OBJECT_FILES)
-	$(TARGET_LD) $(TARGET_LDFLAGS) -T $(TARGET_LDSCRIPT) -o mordax.elf \
+	$(TARGET_LD) $(TARGET_LDFLAGS) -T $(TARGET_LDSCRIPT) -Map mordax.map -o mordax.elf \
 		$(OBJECT_FILES)
 	$(TARGET_OBJCOPY) -O binary -j .init -j .text -j .data \
 		mordax.elf mordax.bin
