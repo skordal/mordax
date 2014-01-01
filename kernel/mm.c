@@ -85,6 +85,9 @@ static physical_ptr mm_allocate_order(struct memory_zone * zone, unsigned order)
 // for the specified order. This function takes care of coalescing blocks when possible.
 static void mm_free_order(struct memory_zone * zone, unsigned order, unsigned bitnum);
 
+// Reserves a block of physical memory:
+static void mm_reserve_block(struct memory_zone * zone, unsigned order, unsigned bitnum);
+
 // Calculates the order of physical block needed to allocate the specified amount
 // of memory:
 static inline unsigned size_to_order(size_t size);
@@ -338,9 +341,9 @@ void mm_add_physical(physical_ptr address, size_t size, unsigned int flags)
 	new_zone->flags = flags;
 	new_zone->next = physical_memory_list;
 
-	new_zone->buddy_lists = mm_allocate(sizeof(uint8_t *) * CONFIG_BUDDY_MAX_ORDER, MM_DEFAULT_ALIGNMENT,
+	new_zone->buddy_lists = mm_allocate(sizeof(uint8_t *) * (CONFIG_BUDDY_MAX_ORDER + 1), MM_DEFAULT_ALIGNMENT,
 		MM_MEM_NORMAL);
-	memclr(new_zone->buddy_lists, sizeof(uint8_t *) * CONFIG_BUDDY_MAX_ORDER);
+	memclr(new_zone->buddy_lists, sizeof(uint8_t *) * (CONFIG_BUDDY_MAX_ORDER + 1));
 
 	// Allocate buddy lists:
 	for(unsigned i = 0; i <= CONFIG_BUDDY_MAX_ORDER; ++i)
@@ -366,8 +369,11 @@ void mm_add_physical(physical_ptr address, size_t size, unsigned int flags)
 
 bool mm_allocate_physical(size_t size, struct mm_physical_memory * retval)
 {
-	struct memory_zone * zone = physical_memory_list; // FIXME: find a proper zone
+	struct memory_zone * zone = physical_memory_list; // TODO: find a proper zone
 	unsigned order = size_to_order(size);
+
+	if(order > CONFIG_BUDDY_MAX_ORDER)
+		kernel_panic("cannot satisfy physical memory request, requested block is too large");
 
 	// Allocates a block of the specified order:
 	retval->base = mm_allocate_order(zone, order);
@@ -379,6 +385,8 @@ bool mm_allocate_physical(size_t size, struct mm_physical_memory * retval)
 
 static physical_ptr mm_allocate_order(struct memory_zone * zone, unsigned order)
 {
+	if(order == CONFIG_BUDDY_MAX_ORDER + 1)
+		return 0;
 	for(unsigned i = 0; i < order_bits(order, zone->size); ++i)
 	{
 		if(zone->buddy_lists[order][i >> 3] & (1 << (i % 8)))
@@ -388,15 +396,14 @@ static physical_ptr mm_allocate_order(struct memory_zone * zone, unsigned order)
 		}
 	}
 
-	if(order != CONFIG_BUDDY_MAX_ORDER)
-	{
-		physical_ptr split_block = mm_allocate_order(zone, order + 1);
-		unsigned split_bits = ((uint32_t) split_block - (uint32_t) zone->start) >> log2(order_blocksize(order));
-		// Return the first block, and set the other as unused:
-		zone->buddy_lists[order][(split_bits + 1) >> 3] |= (1 << ((split_bits + 1) % 8));
-		return split_block;
-	} else // Cannot find a free block, return 0:
-		return 0;
+	// If no block was found, split a larger order block:
+	physical_ptr split_block = mm_allocate_order(zone, order + 1);
+	unsigned split_bits = ((uint32_t) split_block - (uint32_t) zone->start) >> log2(order_blocksize(order));
+
+	// Return the first part of the split block, and set the other as unused:
+	zone->buddy_lists[order][(split_bits + 1) >> 3] |= (1 << ((split_bits + 1) % 8));
+	zone->buddy_lists[order][(split_bits) >> 3] &= ~(1 << ((split_bits) % 8));
+	return split_block;
 }
 
 bool mm_is_physical_managed(physical_ptr address)
@@ -435,6 +442,8 @@ void mm_free_physical(struct mm_physical_memory * block)
 
 static void mm_free_order(struct memory_zone * zone, unsigned order, unsigned bitnum)
 {
+	if(order == CONFIG_BUDDY_MAX_ORDER + 1)
+		return;
 	zone->buddy_lists[order][bitnum >> 3] |= (1 << (bitnum % 8));
 
 	if(order == CONFIG_BUDDY_MAX_ORDER)
@@ -444,18 +453,18 @@ static void mm_free_order(struct memory_zone * zone, unsigned order, unsigned bi
 		if(zone->buddy_lists[order][(bitnum - 1) >> 3] & (1 << ((bitnum - 1) % 8)))
 		{
 			zone->buddy_lists[order][(bitnum - 1) >> 3] &= ~((3 << (bitnum - 1) % 8));
-			mm_free_order(zone, order + 1, bitnum >> 1);
+			mm_free_order(zone, order + 1, (bitnum - 1) >> 1);
 		}
 	} else {
 		if(zone->buddy_lists[order][(bitnum + 1) >> 3] & (1 << ((bitnum + 1) % 8)))
 		{
-			zone->buddy_lists[order][bitnum >> 3] &= ~((0x3 << bitnum % 8));
+			zone->buddy_lists[order][bitnum >> 3] &= ~((3 << bitnum % 8));
 			mm_free_order(zone, order + 1, bitnum >> 1);
 		}
 	}
+
 }
 
-static void mm_reserve_block(struct memory_zone * zone, unsigned order, unsigned bitnum);
 void mm_reserve_physical(physical_ptr address, size_t size)
 {
 	struct memory_zone * zone = physical_memory_list;
