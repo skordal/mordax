@@ -81,7 +81,7 @@ void memcpy_p(void * dest_addr, struct process * dest_proc,
 		*((char *) ((uint32_t) dest_addr + i)) = temp;
 	}
 
-	if(tt != 0)
+	if(current_tt != 0)
 		mmu_set_translation_table(current_tt);
 }
 
