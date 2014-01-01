@@ -47,6 +47,12 @@ void syscall_thread_join(struct thread_context * context);
  */
 void syscall_thread_info(struct thread_context * context);
 
+/**
+ * Process creation syscall handler. Takes a pointer to a filled in
+ * mordax_process_info structure as parameter.
+ */
+void syscall_process_create(struct thread_context * context);
+
 /** @} */
 
 #endif

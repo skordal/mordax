@@ -36,14 +36,16 @@ typedef void (*rbtree_key_free_func)(void *);
 typedef void (*rbtree_data_free_func)(void *);
 
 /**
- * Constructs an empty red-black tree.
+ * Constructs an empty red-black tree. The arguments to this function can all be `0`.
  * @param key_compare function for comparing keys.
  * @param key_free function for freeing keys.
  * @param key_dup function for duplicating keys.
+ * @param data_free function for freeing node data.
  * @return a new, empty red-black tree.
  */
-struct rbtree * rbtree_new(rbtree_key_compare_func key_compare, rbtree_key_free_func key_free,
-	rbtree_key_duplicate_func key_dup) __attribute((malloc));
+struct rbtree * rbtree_new(rbtree_key_compare_func key_compare,
+	rbtree_key_free_func key_free, rbtree_key_duplicate_func key_dup,
+	rbtree_data_free_func data_free) __attribute((malloc));
 
 /**
  * Frees a red-black tree and all its nodes.
@@ -55,8 +57,7 @@ struct rbtree * rbtree_new(rbtree_key_compare_func key_compare, rbtree_key_free_
  * @param data_free_func the function to use for freeing data in nodes or 0 if the
  *                  data should not be freed.
  */
-void rbtree_free(struct rbtree * tree, rbtree_key_free_func key_free_func,
-	rbtree_data_free_func data_free_func);
+void rbtree_free(struct rbtree * tree);
 
 /**
  * Inserts a node in a red-black tree.

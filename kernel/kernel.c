@@ -47,11 +47,11 @@ void kernel_main(physical_ptr * device_tree, size_t dt_size)
 
 	// Map and parse the FDT passed from uboot and create a more accessible local version of it:
 	debug_printf("Parsing device tree... ");
-	struct fdt * uboot_fdt = mmu_map(device_tree, device_tree, dt_size, MORDAX_TYPE_DATA, MORDAX_PERM_RO_NA);
+	struct fdt * uboot_fdt = mmu_map(0, device_tree, device_tree, dt_size, MORDAX_TYPE_DATA, MORDAX_PERM_RO_NA);
 	kernel_dt = dt_parse(uboot_fdt);
 	if(kernel_dt == 0)
 		kernel_panic("could not parse the device tree");
-	mmu_unmap(device_tree, dt_size);
+	mmu_unmap(0, device_tree, dt_size);
 	debug_printf("finished\n");
 
 	debug_printf("\nHardware: %s (compatible: %s)\n",

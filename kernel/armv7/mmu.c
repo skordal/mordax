@@ -21,7 +21,14 @@ struct mmu_translation_table
 {
 	uint32_t table[2048];
 	struct rbtree * lookup_table;
-	uint8_t asid;
+	pid_t pid;
+};
+
+// Structure used in lookup tables:
+struct lookup_table_entry
+{
+	void * virtual, * physical;
+	enum { PT_ADDRESS, MEM_ADDRESS } type;
 };
 
 // The kernel translation table:
@@ -30,30 +37,34 @@ uint32_t kernel_translation_table[4096] __attribute((aligned(16*1024)));
 struct rbtree * kernel_lookup_table;
 
 // The current application translation table:
-struct mmu_translation_table * user_translation_table;
+static struct mmu_translation_table * user_translation_table;
 
 // Next device mapping address:
-void * next_device_address = (void *) 0xf0000000;
+static void * next_device_address = (void *) 0xf0000000;
 
 // Stack for allocating page tables:
-struct mm_object_stack * pt_stack;
+static struct mm_object_stack * pt_stack;
 
-// Function called for each entry in a translation table lookup tree when
-// freeing a translation table:
-static void free_table_entry(void *);
+// Function called for freeing an entry in a lookup table:
+static void free_lookup_entry(struct lookup_table_entry *);
 
 // Maps one page of memory:
-static void * mmu_map_page(physical_ptr physical, void * virtual,
+static void * mmu_map_page(struct mmu_translation_table * t, physical_ptr physical, void * virtual,
 	enum mordax_memory_type type, enum mordax_memory_permissions permissions);
 // Unmaps one page of memory:
-static void mmu_unmap_page(void * virtual);
-// Changes the permissions for one page of memory:
-static void mmu_remap_page(void * virtual, enum mordax_memory_type type,
-	enum mordax_memory_permissions permissions);
+static void mmu_unmap_page(struct mmu_translation_table * t, void * virtual);
+// Changes the attributes for one page of memory:
+static void mmu_change_page_attributes(struct mmu_translation_table * t, void * virtual,
+	enum mordax_memory_type type, enum mordax_memory_permissions permissions);
 
 // Gets the virtual address of the page table the specified entry in a
 // translation table points to, or 0 if none:
 static uint32_t * get_pt_address(uint32_t * translation_table, int index);
+
+// Creates a lookup table entry for a page table:
+static inline struct lookup_table_entry * lookup_entry_pt(void * virtual);
+// Creates a lookup table entry for a memory page:
+static inline struct lookup_table_entry * lookup_entry_mem(physical_ptr physical, void * virtual);
 
 // Gets the type bits for the specified small page type:
 static inline uint32_t small_page_type_bits(enum mordax_memory_type type);
@@ -66,7 +77,7 @@ static uint8_t asid = 0;
 void mmu_initialize(void)
 {
 	extern void * text_start, * data_start, * kernel_address, * load_address;
-	kernel_lookup_table = rbtree_new(0, 0, 0);
+	kernel_lookup_table = rbtree_new(0, 0, 0, mm_free);
 
 	// Create the page table stack:
 	pt_stack = mm_object_stack_create(1024, 1024, 16, 16);
@@ -98,7 +109,7 @@ void mmu_initialize(void)
 	// Add the page table to the kernel translation table:
 	uint32_t pt_entry = (uint32_t) mmu_virtual_to_physical(page_table) | MMU_PAGE_TABLE_TYPE;
 	kernel_translation_table[(uint32_t) &kernel_address >> 20] = pt_entry;
-	rbtree_insert(kernel_lookup_table, mmu_virtual_to_physical(page_table), page_table);
+	rbtree_insert(kernel_lookup_table, mmu_virtual_to_physical(page_table), lookup_entry_pt(page_table));
 
 	// Clear temporary section mappings:
 	uint32_t old_mapping_size = ((uint32_t) &kernel_dataspace_end - (uint32_t) &kernel_address + (1024 * 1024)) & -(1024 * 1024);
@@ -121,36 +132,44 @@ void mmu_initialize(void)
 	);
 }
 
-struct mmu_translation_table * mmu_create_translation_table(void)
+struct mmu_translation_table * mmu_create_translation_table(pid_t pid)
 {
 	struct mmu_translation_table * retval = mm_allocate(sizeof(struct mmu_translation_table), 8192, MM_MEM_NORMAL);
 
 	memclr(retval, sizeof(struct mmu_translation_table));
-	retval->lookup_table = rbtree_new(0, 0, 0);
-	retval->asid = ++asid; // TODO: check that the ASID is unused
+	retval->lookup_table = rbtree_new(0, 0, 0, (rbtree_data_free_func) free_lookup_entry);
+	retval->pid = pid;
 
 	return retval;
 }
 
 void mmu_free_translation_table(struct mmu_translation_table * table)
 {
-	rbtree_free(table->lookup_table, free_table_entry, 0);
+	rbtree_free(table->lookup_table);
 	mm_free(table);
 }
 
-static void free_table_entry(void * address)
+static void free_lookup_entry(struct lookup_table_entry * entry)
 {
-	struct mm_physical_memory memory = { .base = address, .size = CONFIG_PAGE_SIZE };
-
-	// If the memory is managed by the physical memory manager, free it:
-	if(mm_is_physical_managed(address))
+	if(entry->type == PT_ADDRESS)
+	{
+//		debug_printf("Freeing page table @ %p\n", entry->virtual);
+		mm_object_stack_free(pt_stack, entry->virtual);
+	} else if(entry->type == MEM_ADDRESS)
+	{
+		struct mm_physical_memory memory = { .base = entry->physical, .size = CONFIG_PAGE_SIZE };
+//		debug_printf("Freeing physical memory @ %p\n", entry->physical);
 		mm_free_physical(&memory);
+	}
+
+	mm_free(entry);
 }
 
-void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t pid)
+void mmu_set_translation_table(struct mmu_translation_table * table)
 {
 	user_translation_table = table;
 	void * table_physical = mmu_virtual_to_physical(user_translation_table->table);
+	++asid;
 
 	// Switch TTBR0 to point to the new translation table:
 	asm volatile(
@@ -177,50 +196,57 @@ void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t 
 		"dsb\n\t"
 		"isb\n\t"
 		:
-		: [asid] "r" (user_translation_table->asid),
-			[pid] "r" (pid), [table] "r" (table_physical)
+		: [asid] "r" (asid), [pid] "r" (table->pid), [table] "r" (table_physical)
 		: "ip", "v1"
 	);
+
+	if(asid == 0)
+		asm volatile("mcr p15, 0, ip, c8, c7, 0\n\tisb\n\tdsb\n\t"); // clear the TLB
 }
 
-bool mmu_check_access(void * address, size_t size, enum mmu_access_type access, bool user)
+struct mmu_translation_table * mmu_get_translation_table(void)
+{
+	return user_translation_table;
+}
+
+bool mmu_access_permitted(struct mmu_translation_table * t, void * address, size_t size, int flags)
 {
 	// TODO: implement access permission checking.
 	return true;
 }
 
-void * mmu_map(physical_ptr physical, void * virtual, size_t size,
+void * mmu_map(struct mmu_translation_table * t, physical_ptr physical, void * virtual, size_t size,
 	enum mordax_memory_type type, enum mordax_memory_permissions permissions)
 {
 	size = (size + 4095) & -4096;
 	for(unsigned i = 0; i < size >> 12; ++i)
 	{
-		mmu_map_page((physical_ptr) ((uint32_t) physical + (i << 12)),
+		mmu_map_page(t, (physical_ptr) ((uint32_t) physical + (i << 12)),
 			(void *) ((uint32_t) virtual + (i << 12)), type, permissions);
 	}
 
 	return virtual;
 }
 
-void mmu_remap(void * virtual, size_t size, enum mordax_memory_type type,
-	enum mordax_memory_permissions permissions)
+void mmu_change_attributes(struct mmu_translation_table * t, void * virtual, size_t size,
+	enum mordax_memory_type type, enum mordax_memory_permissions permissions)
 {
 	size = (size + 4095) & -4096;
 	for(unsigned i = 0; i < size >> 12; ++i)
-		mmu_remap_page((void *) ((uint32_t) virtual + (i << 12)), type,
-			permissions);
+		mmu_change_page_attributes(t, (void *) ((uint32_t) virtual + (i << 12)),
+			type, permissions);
 }
 
-static void mmu_remap_page(void * virtual, enum mordax_memory_type type,
-	enum mordax_memory_permissions permissions)
+static void mmu_change_page_attributes(struct mmu_translation_table * t, void * virtual,
+	enum mordax_memory_type type, enum mordax_memory_permissions permissions)
 {
 	virtual = (void *) ((uint32_t) virtual & -4096);
 
 	uint32_t * table;
-	if((uint32_t) virtual >= MMU_KERNEL_SPLIT_ADDRESS)
+	if((uint32_t) virtual >= MMU_KERNEL_SPLIT_ADDRESS || t == 0)
 		table = kernel_translation_table;
 	else
-		table = user_translation_table->table;
+		table = t->table;
 	uint32_t * page_table = get_pt_address(table, (uint32_t) virtual >> 20);
 
 	if(page_table == 0) // If there is no page table, return.
@@ -229,7 +255,7 @@ static void mmu_remap_page(void * virtual, enum mordax_memory_type type,
 		return;
 
 	uint32_t physical = page_table[((uint32_t) virtual & 0xfffff) >> 12] & MMU_SMALL_PAGE_BASE_MASK;
-	debug_printf("Altering mapping of %x -> %x...\n", physical, virtual);
+	debug_printf("Altering mapping of %p -> %p...\n", (void *) physical, virtual);
 
 	uint32_t entry = physical | MMU_SMALL_PAGE_TYPE |
 		small_page_type_bits(type) | small_page_permission_bits(permissions);
@@ -243,15 +269,15 @@ void * mmu_map_device(physical_ptr physical, size_t size)
 	void * retval = next_device_address;
 	size = (size + 4095) & -4096;
 	next_device_address = (void *) ((uint32_t) next_device_address + size);
-	mmu_map(physical, retval, size, MORDAX_TYPE_DEVICE, MORDAX_PERM_RW_NA);
+	mmu_map(0, physical, retval, size, MORDAX_TYPE_DEVICE, MORDAX_PERM_RW_NA);
 	return retval;
 }
 
-void mmu_unmap(void * virtual, size_t size)
+void mmu_unmap(struct mmu_translation_table * t, void * virtual, size_t size)
 {
 	size = (size + 4095) & -4096;
 	for(int i = 0; i < size >> 12; ++i)
-		mmu_unmap_page((void *) ((uint32_t) virtual + (i << 12)));
+		mmu_unmap_page(t, (void *) ((uint32_t) virtual + (i << 12)));
 }
 
 physical_ptr mmu_virtual_to_physical(void * virtual)
@@ -277,19 +303,19 @@ physical_ptr mmu_virtual_to_physical(void * virtual)
 void * mmu_physical_to_virtual(physical_ptr physical)
 {
 	if(rbtree_key_exists(kernel_lookup_table, physical))
-		return rbtree_get_value(kernel_lookup_table, physical);
+		return ((struct lookup_table_entry *) rbtree_get_value(kernel_lookup_table, physical))->virtual;
 	else
-		return rbtree_get_value(user_translation_table->lookup_table, physical);
+		return ((struct lookup_table_entry *) rbtree_get_value(user_translation_table->lookup_table, physical))->virtual;
 }
 
-static void * mmu_map_page(physical_ptr physical, void * virtual,
+static void * mmu_map_page(struct mmu_translation_table * t, physical_ptr physical, void * virtual,
 	enum mordax_memory_type type, enum mordax_memory_permissions permissions)
 {
 	uint32_t * table;
-	if((uint32_t) virtual >= MMU_KERNEL_SPLIT_ADDRESS)
+	if((uint32_t) virtual >= MMU_KERNEL_SPLIT_ADDRESS || t == 0)
 		table = kernel_translation_table;
 	else
-		table = user_translation_table->table;
+		table = t->table;
 	uint32_t * page_table = get_pt_address(table, (uint32_t) virtual >> 20);
 
 	// Round the physical (and virtual) addresses down:
@@ -302,13 +328,9 @@ static void * mmu_map_page(physical_ptr physical, void * virtual,
 		page_table = mm_object_stack_allocate(pt_stack);
 		memclr(page_table, 1024);
 		if(table == kernel_translation_table)
-		{
-			rbtree_insert(kernel_lookup_table, mmu_virtual_to_physical(page_table),
-				page_table);
-		} else {
-			rbtree_insert(user_translation_table->lookup_table,
-				mmu_virtual_to_physical(page_table), page_table);
-		}
+			rbtree_insert(kernel_lookup_table, mmu_virtual_to_physical(page_table), lookup_entry_pt(page_table));
+		else
+			rbtree_insert(t->lookup_table, mmu_virtual_to_physical(page_table), lookup_entry_pt(page_table));
 		table[(uint32_t) virtual >> 20] = (uint32_t) mmu_virtual_to_physical(page_table)
 			| MMU_PAGE_TABLE_TYPE;
 	}
@@ -322,20 +344,20 @@ static void * mmu_map_page(physical_ptr physical, void * virtual,
 
 	// Insert the page into the lookup table:
 	if(table == kernel_translation_table)
-		rbtree_insert(kernel_lookup_table, physical, virtual);
+		rbtree_insert(kernel_lookup_table, physical, lookup_entry_mem(physical, virtual));
 	else
-		rbtree_insert(user_translation_table->lookup_table, physical, virtual);
+		rbtree_insert(t->lookup_table, physical, lookup_entry_mem(physical, virtual));
 
 	return virtual;
 }
 
-static void mmu_unmap_page(void * virtual)
+static void mmu_unmap_page(struct mmu_translation_table * t, void * virtual)
 {
 	uint32_t * table;
-	if((uint32_t) virtual >= MMU_KERNEL_SPLIT_ADDRESS)
+	if((uint32_t) virtual >= MMU_KERNEL_SPLIT_ADDRESS || t == 0)
 		table = kernel_translation_table;
 	else
-		table = user_translation_table->table;
+		table = t->table;
 
 	uint32_t * page_table = get_pt_address(table, (uint32_t) virtual >> 20);
 
@@ -344,7 +366,7 @@ static void mmu_unmap_page(void * virtual)
 	if(table == kernel_translation_table)
 		rbtree_delete(kernel_lookup_table, mmu_virtual_to_physical(virtual));
 	else
-		rbtree_delete(user_translation_table->lookup_table, mmu_virtual_to_physical(virtual));
+		rbtree_delete(t->lookup_table, mmu_virtual_to_physical(virtual));
 
 	if(page_table != 0)
 		page_table[((uint32_t) virtual & 0xfffff) >> 12] = 0;
@@ -358,6 +380,25 @@ static uint32_t * get_pt_address(uint32_t * translation_table, int index)
 		return 0;
 	else
 		return mmu_physical_to_virtual((void *) (translation_table[index] & MMU_PAGE_TABLE_BASE_MASK));
+}
+
+static inline struct lookup_table_entry * lookup_entry_pt(void * virtual)
+{
+	struct lookup_table_entry * retval = mm_allocate(sizeof(struct lookup_table_entry),
+		MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	retval->virtual = virtual;
+	retval->type = PT_ADDRESS;
+	return retval;
+}
+
+static inline struct lookup_table_entry * lookup_entry_mem(physical_ptr physical, void * virtual)
+{
+	struct lookup_table_entry * retval = mm_allocate(sizeof(struct lookup_table_entry),
+		MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	retval->virtual = virtual;
+	retval->physical = physical;
+	retval->type = MEM_ADDRESS;
+	return retval;
 }
 
 static inline uint32_t small_page_type_bits(enum mordax_memory_type type)

@@ -23,21 +23,25 @@ struct process * process_create(struct mordax_process_info * procinfo)
 	retval->pid = scheduler_allocate_pid();
 
 	retval->next_tid = 0;
-	retval->allocated_tids = rbtree_new(0, 0, 0);
+	retval->allocated_tids = rbtree_new(0, 0, 0, 0);
 
 	retval->owner_group = procinfo->gid;
 	retval->owner_user = procinfo->uid;
-	retval->permissions = procinfo->permissions;
 
-	debug_printf("Creating process translation table...\n");
-	retval->translation_table = mmu_create_translation_table();
-
-	debug_printf("Setting translation table as current...\n");
-	mmu_set_user_translation_table(retval->translation_table, retval->pid);
+	if((procinfo->permissions & MORDAX_PROCESS_INHERIT_PERMISSIONS) == MORDAX_PROCESS_INHERIT_PERMISSIONS)
+		retval->permissions = active_thread->parent->permissions;
+	else
+		retval->permissions = procinfo->permissions;
+	retval->translation_table = mmu_create_translation_table(retval->pid);
 
 	// Create the initial stack:
-	retval->stack_size = (procinfo->stack_length + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE;
+	if(procinfo->stack_length == MORDAX_PROCESS_INHERIT_STACK_SIZE)
+		retval->stack_size = active_thread->parent->stack_size;
+	else
+		retval->stack_size = (procinfo->stack_length + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE;
 	int stack_pages = retval->stack_size / CONFIG_PAGE_SIZE;
+
+	mmu_set_translation_table(retval->translation_table);
 	for(int i = 0; i < stack_pages; ++i)
 	{
 		struct mm_physical_memory mem;
@@ -48,19 +52,31 @@ struct process * process_create(struct mordax_process_info * procinfo)
 		}
 
 		debug_printf("\tMapping %x to %x for stack\n", mem.base,
-			PROCESS_DEFAULT_STACK_TOP - (i * CONFIG_PAGE_SIZE));
-		mmu_map(mem.base, (void *) (PROCESS_DEFAULT_STACK_TOP - (i * CONFIG_PAGE_SIZE)),
+			PROCESS_DEFAULT_STACK_TOP - ((i + 1) * CONFIG_PAGE_SIZE));
+		mmu_map(retval->translation_table, mem.base,
+			(void *) (PROCESS_DEFAULT_STACK_TOP - ((i + 1) * CONFIG_PAGE_SIZE)),
 			mem.size, MORDAX_TYPE_STACK, MORDAX_PERM_RW_RW);
 	}
 
 	// Copy the initial stack contents:
-	if(!mmu_check_access(procinfo->stack_init, procinfo->stack_init_length, MMU_ACCESS_READ, true))
+	if(procinfo->stack_init_length > 0)
 	{
-		debug_printf("Error: cannot copy initial stack contents, access to memory is forbidden!\n");
-		goto _error_return;
-	} else
-		memcpy(PROCESS_DEFAULT_STACK_TOP - procinfo->stack_init_length, procinfo->stack_init,
-			procinfo->stack_init_length);
+		if(active_thread != 0 && !mmu_access_permitted(active_thread->parent->translation_table,
+			procinfo->stack_init, procinfo->stack_init_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+		{
+			debug_printf("Error: cannot copy initial stack contents, access to memory is forbidden!\n");
+			goto _error_return;
+		} else {
+			if(active_thread == 0)
+			{
+				mmu_set_translation_table(retval->translation_table);
+				memcpy((void *) (PROCESS_DEFAULT_STACK_TOP - procinfo->stack_init_length),
+					procinfo->stack_init, procinfo->stack_init_length);
+			} else
+				memcpy_p((void *) (PROCESS_DEFAULT_STACK_TOP - procinfo->stack_init_length), retval,
+					procinfo->stack_init, active_thread->parent, procinfo->stack_init_length);
+		}
+	}
 
 	// Create the process image:
 	size_t image_size = (procinfo->source_length + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE;
@@ -102,31 +118,44 @@ struct process * process_create(struct mordax_process_info * procinfo)
 			debug_printf("Mapping rodata memory:\n\t");
 		} else {
 			type = MORDAX_TYPE_CODE;
-			permissions = MORDAX_PERM_RW_RO;
+	//		permissions = MORDAX_PERM_RW_RO;
+			permissions = MORDAX_PERM_RW_RW;
 			debug_printf("Mapping code memory:\n\t");
 		}
 
 		debug_printf("Mapping %x to %x\n", mem.base, (i + 1) * CONFIG_PAGE_SIZE);
-		mmu_map(mem.base, (void *) ((i + 1) * CONFIG_PAGE_SIZE), mem.size,
-			type, permissions);
+		mmu_map(retval->translation_table, mem.base, (void *) ((i + 1) * CONFIG_PAGE_SIZE),
+			mem.size, type, permissions);
 	}
 
 	// Copy the process image:
-	if(!mmu_check_access(procinfo->source, procinfo->source_length, MMU_ACCESS_READ, true))
+	if(procinfo->source_length > 0)
 	{
-		debug_printf("Error: cannot copy process image, access to memory is forbidden!\n");
-		goto _error_return;
-	} else
-		memcpy((void *) 0x1000, procinfo->source, procinfo->source_length);
+		if(active_thread != 0 && !mmu_access_permitted(active_thread->parent->translation_table,
+			procinfo->source, procinfo->source_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+		{
+			debug_printf("Error: cannot copy process image, access to memory is forbidden!\n");
+			goto _error_return;
+		} else {
+			if(active_thread == 0)
+			{
+				mmu_set_translation_table(retval->translation_table);
+				memcpy((void *) 0x1000, procinfo->source, procinfo->source_length);
+			} else
+				memcpy_p((void *) 0x1000, retval, procinfo->source,
+					active_thread->parent, procinfo->source_length);
+		}
+	}
 
 	return retval;
 
 _error_return:
-	rbtree_free(retval->allocated_tids, 0, 0);
+	rbtree_free(retval->allocated_tids);
 	scheduler_free_pid(retval->pid);
 	queue_free(retval->threads, 0);
-	mm_free(retval);
 	mmu_free_translation_table(retval->translation_table);
+
+	mm_free(retval);
 	return 0;
 }
 
@@ -135,8 +164,9 @@ void process_free(struct process * p)
 	debug_printf("Freeing process %d\n", p->pid);
 	queue_free(p->threads, (queue_data_free_func) thread_free);
 	scheduler_free_pid(p->pid);
-	rbtree_free(p->allocated_tids, 0, 0);
+	rbtree_free(p->allocated_tids);
 	mmu_free_translation_table(p->translation_table);
+	mm_free(p);
 }
 
 void process_add_thread(struct process * p, struct thread * t)

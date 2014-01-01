@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include "api/types.h"
 
+struct process;
+
 /**
  * Gets the base-2 logarithm of an unsigned integer.
  * @param x the number to get the logarithm of.
@@ -76,6 +78,18 @@ void * memset(void * restrict memory, char value, size_t length)
  * @param length length of the memory area to copy.
  */
 void memcpy(void * dest, void * src, size_t length)
+	__attribute((weak));
+
+/**
+ * Copies data from process A to process B.
+ * @param dest_addr destination address in process B.
+ * @param dest_proc process B.
+ * @param src_addr source address in process A.
+ * @param src_proc process A.
+ * @param length length of the memory area to copy.
+ */
+void memcpy_p(void * dest_addr, struct process * dest_proc,
+	void * src_addr, struct process * src_proc, size_t length)
 	__attribute((weak));
 
 /**

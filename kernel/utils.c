@@ -2,6 +2,10 @@
 // (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
+#include "debug.h"
+#include "mmu.h"
+#include "process.h"
+#include "scheduler.h"
 #include "utils.h"
 
 size_t strlen(const char * s)
@@ -62,5 +66,22 @@ void memcpy(void * dest, void * src, size_t length)
 	char * s = src, * d = dest;
 	for(int i = 0; i < length; ++i)
 		d[i] = s[i];
+}
+
+void memcpy_p(void * dest_addr, struct process * dest_proc,
+	void * src_addr, struct process * src_proc, size_t length)
+{
+	struct mmu_translation_table * current_tt = mmu_get_translation_table();
+
+	for(int i = 0; i < length; ++i)
+	{
+		mmu_set_translation_table(src_proc->translation_table);
+		char temp = *((char *) ((uint32_t) src_addr + i));
+		mmu_set_translation_table(dest_proc->translation_table);
+		*((char *) ((uint32_t) dest_addr + i)) = temp;
+	}
+
+	if(tt != 0)
+		mmu_set_translation_table(current_tt);
 }
 

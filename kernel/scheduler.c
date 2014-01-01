@@ -51,7 +51,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 
 	running_queue = queue_new();
 	blocking_queue = queue_new();
-	allocated_pids = rbtree_new(0, 0, 0);
+	allocated_pids = rbtree_new(0, 0, 0, 0);
 
 	// Create the idle process + thread:
 	struct mordax_process_info idle_process_info = {
@@ -67,7 +67,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 	context_set_mode(idle_thread->context, CONTEXT_KERNELMODE);
 
 	// Map the initial process:
-	uint8_t * initproc_image = mmu_map(initproc_start, initproc_start, initproc_size,
+	uint8_t * initproc_image = mmu_map(0, initproc_start, initproc_start, initproc_size,
 		MORDAX_TYPE_DATA, MORDAX_PERM_RO_RO);
 
 	// Create the initial process:
@@ -84,7 +84,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 		kernel_panic("could not create the initial process");
 
 	// Unmap the initial process:
-	mmu_unmap(initproc_image, initproc_size);
+	mmu_unmap(0, initproc_image, initproc_size);
 
 	// Create the initial thread:
 	struct thread * init_thread = process_add_new_thread(initial_process, PROCESS_START_ADDRESS, PROCESS_DEFAULT_STACK_TOP);
@@ -198,7 +198,7 @@ void scheduler_reschedule()
 		context_copy(active_thread->context, current_context);
 	context_copy(current_context, next_thread->context);
 
-	mmu_set_user_translation_table(next_thread->parent->translation_table, next_thread->parent->pid);
+	mmu_set_translation_table(next_thread->parent->translation_table);
 	active_thread = next_thread;
 }
 

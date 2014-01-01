@@ -8,14 +8,22 @@
 #include "types.h"
 
 /** Mask of all the possible permissions. */
-#define MORDAX_PROCESS_ALL_PERMISSIONS	0xffffffff
+#define MORDAX_PROCESS_ALL_PERMISSIONS		0x7fffffff
 /** Mask indicating no permissions. */
-#define MORDAX_PROCESS_NO_PERMISSIONS	0
+#define MORDAX_PROCESS_NO_PERMISSIONS		0
 
 /** Permission bit allowing a process to create new processes. */
 #define MORDAX_PROCESS_PERMISSION_CREATE_PROC	(1 << 0)
 /** Permission bit allowing proceccess to map random memory. */
 #define MORDAX_PROCESS_PERMISSION_MMAP		(1 << 1)
+/**
+ * Permission bit specifying that all permissions should be inherited from
+ * the parent process. All other permission bits are ignored if this is set.
+ */
+#define MORDAX_PROCESS_INHERIT_PERMISSIONS	(1 << 31)
+
+/** Stack length value specifying that the stack size should be the same as the parent. */
+#define MORDAX_PROCESS_INHERIT_STACK_SIZE	0xffffffff
 
 /**
  * Structure describing a new process.
@@ -36,14 +44,13 @@ struct mordax_process_info
 	// Initial stack contents (such as process arguments, etc.):
 	void * stack_init;		//< Pointer to where to copy the initial stack data from.
 	size_t stack_init_length;	//< Length of the initial stack data.
-	size_t stack_length;		//< Length of the stack to allocate for the process.
 
 	// Initial process image data:
 	void * source;			//< Data to copy into the process image.
 	size_t source_length;		//< Length of the source data.
 
 	// Section sizes:
-	size_t text_length, rodata_length, data_length; //< Section size.
+	size_t text_length, rodata_length, data_length, stack_length; //< Section sizes.
 };
 
 #endif

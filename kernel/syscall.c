@@ -8,6 +8,7 @@
 #include "scheduler.h"
 #include "syscall.h"
 #include "thread.h"
+#include "utils.h"
 
 #include "api/syscalls.h"
 #include "api/system.h"
@@ -16,10 +17,6 @@
 // System call handler, called by target assembly code:
 void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 {
-	debug_printf("System call from process %d thread %d: %d\n",
-		active_thread->parent->pid, active_thread->tid, syscall);
-
-	// TODO: replace this switch with an array or something else more clever
 	switch(syscall)
 	{
 		case MORDAX_SYSCALL_SYSTEM:
@@ -34,8 +31,12 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 		case MORDAX_SYSCALL_THREAD_JOIN:
 			syscall_thread_join(context);
 			break;
+		case MORDAX_SYSCALL_PROCESS_CREATE:
+			syscall_process_create(context);
+			break;
 		default: // TODO: handle unrecognized system calls
 			debug_printf("Unknown system call %d\n", syscall);
+			context_print(context);
 			break;
 	}
 }
@@ -120,5 +121,57 @@ void syscall_thread_info(struct thread_context * context)
 			context_set_syscall_retval(context, (void *) -1);
 			break;
 	}
+}
+
+void syscall_process_create(struct thread_context * context)
+{
+	struct process * proc = 0;
+	struct thread * init_thread = 0;
+	struct mordax_process_info * procinfo_ptr = context_get_syscall_argument(context, 0);
+	struct mordax_process_info procinfo_cpy;
+
+	debug_printf("PID %d, TID %d wants to create a new process\n", active_thread->parent->pid,
+		active_thread->tid);
+	context_print(context);
+	debug_printf("\tProcess info @ %p (copied to %p)\n", procinfo_ptr, &procinfo_cpy);
+
+	if(!mmu_access_permitted(0, procinfo_ptr, sizeof(struct mordax_process_info), MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		// TODO: terminate calling process.
+		debug_printf("Error: cannot create process: cannot access process info structure\n");
+		goto _error_return;
+	} else {
+		// Copy the process info to allow access while switching between address spaces
+		// during process creation.
+		memcpy(&procinfo_cpy, procinfo_ptr, sizeof(struct mordax_process_info));
+	}
+
+	// Create the process:
+	proc = process_create(&procinfo_cpy);
+	if(proc == 0)
+	{
+		debug_printf("Error: could not create process: process_create failed\n");
+		goto _error_return;
+	}
+
+	// Create the initial thread:
+	init_thread = process_add_new_thread(proc, procinfo_cpy.entry_point, (void *) PROCESS_DEFAULT_STACK_TOP);
+	if(init_thread == 0)
+	{
+		debug_printf("Error: could not create process: could not create initial thread\n");
+		goto _error_return;
+	}
+
+	scheduler_add_thread(init_thread);
+	context_set_syscall_retval(context, (void *) proc->pid);
+//	scheduler_reschedule();
+	return;
+
+_error_return:
+	if(init_thread != 0)
+		thread_free(init_thread, -1); // also frees the process
+	else if(proc != 0)
+		process_free(proc);
+	context_set_syscall_retval(context, (void *) -1);
 }
 

@@ -13,10 +13,9 @@
  * @{
  */
 
-enum mmu_access_type
-{
-	MMU_ACCESS_READ, MMU_ACCESS_WRITE,
-};
+#define MMU_ACCESS_READ		(1 << 0)
+#define MMU_ACCESS_WRITE	(1 << 1)
+#define MMU_ACCESS_USER		(1 << 2)
 
 /** Translation table type. */
 struct mmu_translation_table;
@@ -28,7 +27,7 @@ void mmu_initialize(void);
  * Creates a translation table for application use.
  * @return an empty translation table for application use.
  */
-struct mmu_translation_table * mmu_create_translation_table(void);
+struct mmu_translation_table * mmu_create_translation_table(pid_t pid);
 
 /**
  * Deletes a translation table for application use.
@@ -44,23 +43,31 @@ void mmu_free_translation_table(struct mmu_translation_table * table);
  * @param table the new translation table.
  * @param pid the PID of the process.
  */
-void mmu_set_user_translation_table(struct mmu_translation_table * table, pid_t pid);
+void mmu_set_translation_table(struct mmu_translation_table * table);
 
 /**
- * Checks if the specified virtual address is accessible.
+ * Gets a pointer to the current application translation table.
+ * @return a pointer to the current translation table.
+ */
+struct mmu_translation_table * mmu_get_translation_table(void);
+
+/**
+ * Checks if the specified virtual memory is accessible. This function uses the
+ * current translation table.
+ * @param table translation table to test the access with. Set this to `0` to use
+ *              the current translation table.
  * @param address the address to check.
  * @param size size of the access.
- * @param access the type of access to check for.
- * @param user `true` if the access is a user-mode access.
+ * @param flags flags describing the access to check for.
  * @return `true` if the access is permitted, `false` otherwise.
  */
-bool mmu_check_access(void * address, size_t size, enum mmu_access_type access,
-	bool user);
+bool mmu_access_permitted(struct mmu_translation_table * table, void * address, size_t size, int flags);
 
 /**
  * Creates a memory mapping. The address is mapped in either the userspace
  * translation table or the kernel translation table based on whether the
  * virtual address to map to is in userspace or kernelspace.
+ * @param table the translation table to create the mapping in.
  * @param physical physical address of the memory to map. The physical address
  *                 is rounded down to a multiple of the page size.
  * @param virtual virtual address to map the memory to.
@@ -69,18 +76,19 @@ bool mmu_check_access(void * address, size_t size, enum mmu_access_type access,
  * @param type type of memory mapping
  * @param permissions memory access permissions
  */
-void * mmu_map(physical_ptr physical, void * virtual, size_t size,
-	enum mordax_memory_type type, enum mordax_memory_permissions permissions);
+void * mmu_map(struct mmu_translation_table * table, physical_ptr physical, void * virtual,
+	size_t size, enum mordax_memory_type type, enum mordax_memory_permissions permissions);
 
 /**
- * Changes the permissions for an interval of virtual memory.
+ * Changes the attributes for an interval of virtual memory.
+ * @param table the translation table to alter.
  * @param virtual the virtual address of the page to change permissions for.
  * @param size the size of the memory range to remap.
  * @param type new type for the page.
  * @param permissions new permissions for the page.
  */
-void mmu_remap(void * virtual, size_t size, enum mordax_memory_type type,
-	enum mordax_memory_permissions permissions);
+void mmu_change_attributes(struct mmu_translation_table * table, void * virtual, size_t size,
+	enum mordax_memory_type type, enum mordax_memory_permissions permissions);
 
 /**
  * Maps a device for kernel use.
@@ -92,10 +100,11 @@ void * mmu_map_device(physical_ptr physical, size_t size);
 
 /**
  * Unmaps a section of virtual memory.
+ * @param table the translation table to alter.
  * @param virtual the virtual address to unmap.
  * @param size the length of the mapping to unmap.
  */
-void mmu_unmap(void * virtual, size_t size);
+void mmu_unmap(struct mmu_translation_table * table, void * virtual, size_t size);
 
 /**
  * Converts a virtual address to a physical address.
