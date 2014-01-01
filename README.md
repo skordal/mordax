@@ -1,5 +1,5 @@
-The Mordax Microkernel OS
-=========================
+The Mordax Operating System
+===========================
 
 This project aims to create a simple operating system with its own kernel and applications.
 
@@ -16,10 +16,10 @@ When you have the required tools, run `make` from the toplevel folder. You have 
 
 Beware, that until there is a stable release, there may be issues in the code causing the build to fail.
 
-The Microkernel
----------------
+The kernel
+----------
 
-The microkernel is a work in progress and is changing rapidly. It can currently only run very simple test programmes.
+The kernel is a mostly-microkernel, which aims to provide the least amount of neccessary functionality for applications to run. It is a work in progress, and currently only supports a limited set of system calls while being stricly single-processor (no locking or synchronization of any kind has been included yet).
 
 The Applications
 ----------------
