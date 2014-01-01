@@ -9,8 +9,7 @@ ifeq ($(TOPLEVEL),)
 endif
 
 # List of applications to build:
-APPLICATIONS ?= \
-	syscall_test
+APPLICATIONS ?=
 .PHONY: all clean $(APPLICATIONS)
 
 all: $(APPLICATIONS)
