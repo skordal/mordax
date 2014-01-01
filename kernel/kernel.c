@@ -84,10 +84,12 @@ void kernel_main(physical_ptr * device_tree, size_t dt_size)
 	// Initialize the interrupt controller driver:
 	initialize_intc(mordax_node);
 
+	debug_printf("Hardware initialization finished.\n\n");
+
 	// Initialize the scheduler:
 	initialize_scheduler(mordax_node);
 
-	debug_printf("Initialization finished.\n");
+	debug_printf("Initialization finished.\n\n");
 	while(true) asm volatile("wfi\n\t");
 }
 

@@ -54,6 +54,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 	allocated_pids = rbtree_new(0, 0, 0, 0);
 
 	// Create the idle process + thread:
+	debug_printf("Creating idle process...\n");
 	struct mordax_process_info idle_process_info = {
 		.entry_point = (void *) idle_thread_loop,
 		.permissions = MORDAX_PROCESS_NO_PERMISSIONS
@@ -67,6 +68,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 	context_set_mode(idle_thread->context, CONTEXT_KERNELMODE);
 
 	// Map the initial process:
+	debug_printf("Creating initial process...\n");
 	uint8_t * initproc_image = mmu_map(0, initproc_start, initproc_start, initproc_size,
 		MORDAX_TYPE_DATA, MORDAX_PERM_RO_RO);
 
@@ -101,15 +103,11 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 
 void scheduler_add_thread(struct thread * t)
 {
-	debug_printf("Adding thread with PID %d, TID %d to ready queue\n", (int) t->parent->pid,
-		(int) t->tid);
 	queue_add_front(running_queue, t);
 }
 
 struct thread * scheduler_remove_thread(struct thread * t)
 {
-	debug_printf("Removing thread with PID %d, TID %d from the scheduler queues\n",
-		(int) t->parent->pid, (int) t->tid);
 	if(t == active_thread)
 		active_thread = 0;
 
@@ -179,7 +177,6 @@ void scheduler_move_thread_to_running(struct thread * t)
 
 void scheduler_reschedule()
 {
-	debug_printf("Rescheduling...\n");
 	struct thread * next_thread;
 
 	if(active_thread != 0 && active_thread != idle_thread)
