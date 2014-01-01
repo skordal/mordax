@@ -29,5 +29,5 @@ Only simple kernel test applications are available at the moment.
 The Libraries
 -------------
 
-None yet.
+* libmordax: a library providing wrapper functions for the supported system calls.
 

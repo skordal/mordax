@@ -10,6 +10,7 @@ TARGET_PREFIX  ?= arm-none-eabi
 # Target-dependent build tools:
 export TARGET_CC      ?= $(TARGET_PREFIX)-gcc
 export TARGET_LD      ?= $(TARGET_PREFIX)-ld
+export TARGET_AR      ?= $(TARGET_PREFIX)-ar
 export TARGET_OBJCOPY ?= $(TARGET_PREFIX)-objcopy
 
 # Target-dependent build flags:

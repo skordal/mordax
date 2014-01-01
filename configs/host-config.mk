@@ -11,3 +11,7 @@ export HOST_CC ?= $(CC)
 export HOST_CFLAGS  ?= $(CFLAGS) -O2 -Wall -g
 export HOST_LDFLAGS ?= $(LDFLAGS)
 
+# Target independent build tools:
+export CP ?= cp
+export LN ?= ln
+

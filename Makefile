@@ -2,7 +2,7 @@
 # (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
 # Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
-.PHONY: all applications clean kernel tools
+.PHONY: all applications clean kernel libraries
 
 export TARGET
 export TOPLEVEL = $(PWD)
@@ -20,13 +20,17 @@ endif
 
 all: kernel applications
 
-applications:
+applications: libraries
 	@$(MAKE) -C applications
 
 kernel:
 	@$(MAKE) -C kernel
 
+libraries:
+	@$(MAKE) -C libraries
+
 clean:
 	@$(MAKE) -C applications clean
 	@$(MAKE) -C kernel clean
+	@$(MAKE) -C libraries clean
 
