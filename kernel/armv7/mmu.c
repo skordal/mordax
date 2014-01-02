@@ -152,14 +152,12 @@ void mmu_free_translation_table(struct mmu_translation_table * table)
 static void free_lookup_entry(struct lookup_table_entry * entry)
 {
 	if(entry->type == PT_ADDRESS)
-	{
-//		debug_printf("Freeing page table @ %p\n", entry->virtual);
 		mm_object_stack_free(pt_stack, entry->virtual);
-	} else if(entry->type == MEM_ADDRESS)
+	else if(entry->type == MEM_ADDRESS)
 	{
 		struct mm_physical_memory memory = { .base = entry->physical, .size = CONFIG_PAGE_SIZE };
-//		debug_printf("Freeing physical memory @ %p\n", entry->physical);
-		mm_free_physical(&memory);
+		if(mm_is_physical_managed(memory.base))
+			mm_free_physical(&memory);
 	}
 
 	mm_free(entry);

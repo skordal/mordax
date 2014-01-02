@@ -72,3 +72,27 @@ mordax_process_create:
 	svc #MORDAX_SYSCALL_PROCESS_CREATE
 	bx lr
 
+@ Maps memory.
+@ Parameters:
+@ 	r0 = virtual target address
+@ 	r1 = physical source address
+@ 	r2 = size of the mapping
+@ 	r3 = pointer to a structure containing the desired memory attributes
+@ Return values:
+@ 	r0 = the target address, or 0 on error
+.global mordax_memory_map
+.type mordax_memory_map, %function
+mordax_memory_map:
+	svc #MORDAX_SYSCALL_MAP
+	bx lr
+
+@ Unmaps memory.
+@ Parameters:
+@ 	r0 = virtual address to begin unmapping at.
+@ 	r1 = size of the memory space to unmap.
+.global mordax_memory_unmap
+.type mordax_memory_unmap, %function
+mordax_memory_unmap:
+	svc #MORDAX_SYSCALL_UNMAP
+	bx lr
+

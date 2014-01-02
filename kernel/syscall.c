@@ -4,6 +4,7 @@
 
 #include "context.h"
 #include "debug.h"
+#include "mm.h"
 #include "process.h"
 #include "scheduler.h"
 #include "syscall.h"
@@ -33,6 +34,12 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 			break;
 		case MORDAX_SYSCALL_PROCESS_CREATE:
 			syscall_process_create(context);
+			break;
+		case MORDAX_SYSCALL_MAP:
+			syscall_memory_map(context);
+			break;
+		case MORDAX_SYSCALL_UNMAP:
+			syscall_memory_unmap(context);
 			break;
 		default: // TODO: handle unrecognized system calls
 			debug_printf("Unknown system call %d\n", syscall);
@@ -173,5 +180,68 @@ _error_return:
 	else if(proc != 0)
 		process_free(proc);
 	context_set_syscall_retval(context, (void *) -1);
+}
+
+void syscall_memory_map(struct thread_context * context)
+{
+	// Check for required permissions:
+	if((active_thread->parent->permissions & MORDAX_PROCESS_PERMISSION_MAP_MEMORY) == 0)
+	{
+		debug_printf("Error: cannot map memory, calling process lacks permissions to do so\n");
+		context_set_syscall_retval(context, (void *) -1);
+		return;
+	}
+
+	void * target = context_get_syscall_argument(context, 0);
+	physical_ptr * source = context_get_syscall_argument(context, 1);
+	size_t size = ((uint32_t) context_get_syscall_argument(context, 2) + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE;
+	struct mordax_memory_attributes * attributes = context_get_syscall_argument(context, 3);
+
+	if(!mmu_access_permitted(0, attributes, sizeof(struct mordax_memory_attributes), MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		debug_printf("Error: cannot map memory, cannot access attributes structure\n");
+		context_set_syscall_retval(context, 0);
+		return;
+	}
+
+	physical_ptr start_physical = (void *) ((uint32_t) source & -CONFIG_PAGE_SIZE);
+	void * start_virtual = (void *) ((uint32_t) target & -CONFIG_PAGE_SIZE);
+	size_t real_size = ((((uint32_t) source + size) + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE)
+		- ((uint32_t) source & -CONFIG_PAGE_SIZE);
+
+	// Check the addresses:
+	if((uint32_t) start_virtual >= CONFIG_KERNEL_SPLIT)
+	{
+		debug_printf("Error: target address cannot be in kernel space\n");
+		context_set_syscall_retval(context, 0);
+		return;
+	}
+	if(mm_is_physical_managed(start_physical))
+	{
+		debug_printf("Error: cannot map memory managed by the physical memory manager\n");
+		context_set_syscall_retval(context, 0);
+		return;
+	}
+
+	// TODO: do better checking of these addresses, as the address space to map can overlap important stuff.
+
+	void * retval = mmu_map(active_thread->parent->translation_table, start_physical,
+		start_virtual, real_size, attributes->type, attributes->permissions);
+	context_set_syscall_retval(context, retval);
+}
+
+void syscall_memory_unmap(struct thread_context * context)
+{
+	void * start_unmap = (void *) ((uint32_t) context_get_syscall_argument(context, 0) & -CONFIG_PAGE_SIZE);
+	size_t size = ((uint32_t) context_get_syscall_argument(context, 1) + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE;
+
+	// TODO: do better checking of what the memory area to unmap contains.
+	if(start_unmap >= CONFIG_KERNEL_SPLIT)
+	{
+		debug_printf("Error: cannot unmap memory in the kernel's address space\n");
+		return;
+	}
+
+	mmu_unmap(active_thread->parent->translation_table, start_unmap, size);
 }
 

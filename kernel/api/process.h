@@ -15,7 +15,7 @@
 /** Permission bit allowing a process to create new processes. */
 #define MORDAX_PROCESS_PERMISSION_CREATE_PROC	(1 << 0)
 /** Permission bit allowing proceccess to map random memory. */
-#define MORDAX_PROCESS_PERMISSION_MMAP		(1 << 1)
+#define MORDAX_PROCESS_PERMISSION_MAP_MEMORY	(1 << 1)
 /**
  * Permission bit specifying that all permissions should be inherited from
  * the parent process. All other permission bits are ignored if this is set.

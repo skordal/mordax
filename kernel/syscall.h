@@ -8,7 +8,8 @@
 #include "context.h"
 
 /**
- * @defgroup syscalls System Call Support
+ * @defgroup syscalls System Calls
+ * System call handlers.
  * @{
  */
 
@@ -52,6 +53,19 @@ void syscall_thread_info(struct thread_context * context);
  * mordax_process_info structure as parameter.
  */
 void syscall_process_create(struct thread_context * context);
+
+/**
+ * Maps physical memory to virtual memory. Takes four arguments;
+ * the target address, the source address, the size of the mapping
+ * and a pointer to the desired attributes of the memory.
+ */
+void syscall_memory_map(struct thread_context * context);
+
+/**
+ * Unmaps mapped virtual memory. Takes two arguments; the address
+ * to start unmapping at and the size of the area to unmap.
+ */
+void syscall_memory_unmap(struct thread_context * context);
 
 /** @} */
 

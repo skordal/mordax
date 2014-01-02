@@ -55,5 +55,39 @@ void * mordax_thread_info(int function);
  */
 pid_t mordax_process_create(struct mordax_process_info * procinfo);
 
+/**
+ * Maps a physical memory address into a process' virtual memory space.
+ * If the physical memory is part of the memory managed by the memory,
+ * this system call fails. It is, however, possible to map physical
+ * memory that is already mapped by other processes. The consequences
+ * of doing so may, however, not be pleasant.
+ *
+ * The page at address 0x00000000 is holy and cannot be the target of
+ * a mapping.
+ *
+ * The calling process must have the neccessary permissions if this call
+ * is to succeed.
+ *
+ * @param target target address of the mapping.
+ * @param source source address to map.
+ * @param size size of the address space to map. This is rounded up to the
+ *             a multiple of the page size by the kernel.
+ * @param attributes pointer to a structure describing the attributes
+ *                   of the mapped memory.
+ * @return a pointer to the beginning of the mapped memory or 0 if an
+ *         error occurs.
+ */
+void * mordax_memory_map(void * target, physical_ptr source, size_t size,
+	struct mordax_memory_attributes * attributes);
+
+/**
+ * Unmaps a virtual address from the process' virtual memory space.
+ * If the memory that the virtual address refers to has previously been
+ * allocated by the physical memory manager, it is freed.
+ * @param virtual the virtual address to unmap.
+ * @param size size of the address area to unmap.
+ */
+void mordax_memory_unmap(void * virtual, size_t size);
+
 #endif
 
