@@ -24,7 +24,7 @@ The kernel is a mostly-microkernel, which aims to provide the least amount of ne
 The Applications
 ----------------
 
-Only simple kernel test applications are available at the moment.
+* mt_test: a simple application used for testing the multithreading capabilities of the kernel.
 
 The Libraries
 -------------
