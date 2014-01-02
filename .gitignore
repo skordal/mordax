@@ -1,4 +1,5 @@
 # Ignore built binary files:
+*.a
 *.o
 *.itb
 *.dtb
