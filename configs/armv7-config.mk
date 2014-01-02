@@ -6,6 +6,7 @@
 
 # Target prefix:
 TARGET_PREFIX  ?= arm-none-eabi
+TARGET_CFLAGS  += -mcpu=cortex-a8
 
 # Target-dependent build tools:
 export TARGET_CC      ?= $(TARGET_PREFIX)-gcc
