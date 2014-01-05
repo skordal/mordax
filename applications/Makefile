@@ -14,7 +14,7 @@ TARGET_LDFLAGS += -L$(TOPLEVEL)/libraries/mordax
 
 # List of applications to build:
 APPLICATIONS ?= \
-	mt_test
+	syscall_tests
 .PHONY: all clean $(APPLICATIONS)
 
 all: $(APPLICATIONS)
