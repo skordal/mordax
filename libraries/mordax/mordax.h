@@ -49,7 +49,8 @@ int mordax_thread_join(tid_t tid);
 void * mordax_thread_info(int function);
 
 /**
- * Creates a new process.
+ * Creates a new process. The process must have the required
+ * permissions for this call to succeed.
  * @param procinfo information about the new process to create.
  * @return the PID of the new process or -1 if an error occurs.
  */
@@ -78,6 +79,19 @@ pid_t mordax_process_create(struct mordax_process_info * procinfo);
  *         error occurs.
  */
 void * mordax_memory_map(void * target, physical_ptr source, size_t size,
+	struct mordax_memory_attributes * attributes);
+
+/**
+ * Allocates a chunk of physical memory and maps it into a process' virtual memory space.
+ * The memory is freed by unmapping it.
+ * @param target target address of the mapping.
+ * @param size pointer to a `size_t` variable holding the size of the memory to allocate.
+ *             This variable is updated with the actual size allocated.
+ * @param attributes pointer to a structure describing the attributes of the
+ *                   mapped memory.
+ * @return a pointer to the beginning of the mapped memory or 0 if an error occurs.
+ */
+void * mordax_memory_map_alloc(void * target, size_t * size,
 	struct mordax_memory_attributes * attributes);
 
 /**

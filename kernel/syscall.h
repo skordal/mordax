@@ -62,6 +62,16 @@ void syscall_process_create(struct thread_context * context);
 void syscall_memory_map(struct thread_context * context);
 
 /**
+ * Allocates physical memory and maps it into virtual memory.
+ * Takes three arguments; the target address, a pointer to the
+ * size of the requested memory and a pointer to the desired
+ * attributes of the memory. A pointer to the mapped memory is
+ * returned from the syscall, as well as the size argument being
+ * updated with the actual size allocated and mapped.
+ */
+void syscall_memory_map_alloc(struct thread_context * context);
+
+/**
  * Unmaps mapped virtual memory. Takes two arguments; the address
  * to start unmapping at and the size of the area to unmap.
  */

@@ -38,6 +38,9 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 		case MORDAX_SYSCALL_MAP:
 			syscall_memory_map(context);
 			break;
+		case MORDAX_SYSCALL_MAP_ALLOC:
+			syscall_memory_map_alloc(context);
+			break;
 		case MORDAX_SYSCALL_UNMAP:
 			syscall_memory_unmap(context);
 			break;
@@ -227,6 +230,50 @@ void syscall_memory_map(struct thread_context * context)
 
 	void * retval = mmu_map(active_thread->parent->translation_table, start_physical,
 		start_virtual, real_size, attributes->type, attributes->permissions);
+	context_set_syscall_retval(context, retval);
+	mmu_invalidate();
+}
+
+void syscall_memory_map_alloc(struct thread_context * context)
+{
+	void * target = (void *) ((uint32_t) context_get_syscall_argument(context, 0) & -CONFIG_PAGE_SIZE);
+	size_t * size = context_get_syscall_argument(context, 1);
+	struct mordax_memory_attributes * attributes = context_get_syscall_argument(context, 2);
+
+	if(!mmu_access_permitted(0, size, sizeof(size_t), MMU_ACCESS_READ|MMU_ACCESS_WRITE|MMU_ACCESS_USER))
+	{
+		debug_printf("Error: cannot map memory, cannot access memory area size\n");
+		context_set_syscall_retval(context, 0);
+		return;
+	}
+
+	if(!mmu_access_permitted(0, attributes, sizeof(struct mordax_memory_attributes), MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		debug_printf("Error: cannot map memory, cannot access memory attributes\n");
+		context_set_syscall_retval(context, 0);
+		return;
+	}
+
+	if(*size > MM_MAXIMUM_PHYSICAL_BLOCK_SIZE)
+	{
+		debug_printf("Error: cannot map memory, memory request too large\n");
+		context_set_syscall_retval(context, 0);
+		return;
+	}
+
+	if((uint32_t) target > CONFIG_KERNEL_SPLIT)
+	{
+		debug_printf("Error: cannot map memory, target address is in kernel space\n");
+		context_set_syscall_retval(context, 0);
+		return;
+	}
+
+	struct mm_physical_memory allocation;
+	mm_allocate_physical(*size, &allocation);
+	*size = allocation.size;
+
+	void * retval = mmu_map(active_thread->parent->translation_table, allocation.base, target,
+		allocation.size, attributes->type, attributes->permissions);
 	context_set_syscall_retval(context, retval);
 	mmu_invalidate();
 }

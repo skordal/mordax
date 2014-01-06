@@ -86,6 +86,20 @@ mordax_memory_map:
 	svc #MORDAX_SYSCALL_MAP
 	bx lr
 
+@ Allocates and maps physical memory.
+@ Parameters:
+@ 	r0 = virtual target address
+@ 	r1 = pointer to the size of the memory to allocate and map
+@ 	r2 = pointer to a structure containing the desired memory attributes
+@ Return values:
+@ 	r0 = the target address or 0 on error
+@ Also updates the variable pointed to by the size argument.
+.global mordax_memory_map_alloc
+.type mordax_memory_map_alloc, %function
+mordax_memory_map_alloc:
+	svc #MORDAX_SYSCALL_MAP_ALLOC
+	bx lr
+
 @ Unmaps memory.
 @ Parameters:
 @ 	r0 = virtual address to begin unmapping at.
