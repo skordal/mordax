@@ -13,10 +13,6 @@
 #error "page size not set, define CONFIG_PAGE_SIZE with the proper page size"
 #endif
 
-#ifndef CONFIG_BUDDY_MAX_ORDER
-#error "buddy allocator max order not set, define CONFIG_BUDDY_MAX_ORDER with the proper value"
-#endif
-
 #ifndef CONFIG_MIN_FREE_MEM
 #error "minimum free memory amount not set, define CONFIG_MIN_FREE_MEM with the proper value"
 #endif

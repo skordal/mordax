@@ -23,6 +23,13 @@
 #define MM_DEFAULT_ALIGNMENT	4
 #endif
 
+#ifndef CONFIG_BUDDY_MAX_ORDER
+#error "buddy allocator max order not set, define CONFIG_BUDDY_MAX_ORDER with the proper value"
+#endif
+
+/** Maximum physical block size. */
+#define MM_MAXIMUM_PHYSICAL_BLOCK_SIZE	(1 << (CONFIG_BUDDY_MAX_ORDER + log2(CONFIG_PAGE_SIZE)))
+
 /** Pointer to the end of the kernel dataspace. */
 extern void * kernel_dataspace_end;
 
