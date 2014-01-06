@@ -32,7 +32,7 @@ void abort_get_details(struct abort_details * details, struct thread_context * c
 	}
 
 	uint8_t mode = context->spsr & 0x1f;
-	if(mode == PROCESSOR_MODE_SYS || mode == PROCESSOR_MODE_SVC)
+	if(mode != PROCESSOR_MODE_USR)
 		details->mode = ABORT_KERNEL;
 	else
 		details->mode = ABORT_USER;
