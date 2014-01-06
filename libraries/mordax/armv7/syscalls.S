@@ -8,105 +8,22 @@
 
 .section .text
 
-@ System syscall.
-.global mordax_system
-.type mordax_system, %function
-mordax_system:
-	svc #MORDAX_SYSCALL_SYSTEM
+@ System call wrapper macro, calls the specified system call and returns.
+.macro syscall_wrapper syscall_name, syscall_num
+.global \syscall_name
+.type \syscall_name, %function
+\syscall_name:
+	svc \syscall_num
 	bx lr
+.endm
 
-@ Exits a thread.
-@ Parameters:
-@ 	r0 = exit code
-.global mordax_thread_exit
-.type mordax_thread_exit, %function
-mordax_thread_exit:
-	svc #MORDAX_SYSCALL_THREAD_EXIT
-
-1:	@ Loop code, in case the above falls through for some reason
-	wfi
-	b 1b
-
-@ Creates a new thread.
-@ Parameters:
-@ 	r0 = thread entry-point
-@ 	r1 = top of thread stack
-@ Return values:
-@ 	r0 = thread ID of the new thread or -1 on error
-.global mordax_thread_create
-.type mordax_thread_create, %function
-mordax_thread_create:
-	svc #MORDAX_SYSCALL_THREAD_CREATE
-	bx lr
-
-@ Joins with another thread.
-@ Parameters:
-@ 	r0 = ID of the thread to join with
-@ Return values:
-@ 	r0 = exit code of the thread or -1 on error
-.global mordax_thread_join
-.type mordax_thread_join, %function
-mordax_thread_join:
-	svc #MORDAX_SYSCALL_THREAD_JOIN
-	bx lr
-
-@ Retrieves information about the current thread and/or process.
-@ Parameters:
-@ 	r0 = code selecting requested information
-@ Return values:
-@ 	r0 = the requested information
-.global mordax_thread_info
-.type mordax_thread_info, %function
-mordax_thread_info:
-	svc #MORDAX_SYSCALL_THREAD_INFO
-	bx lr
-
-@ Creates a new process.
-@ Parameters:
-@ 	r0 = pointer to a process information structure
-@ Return values:
-@ 	r0 = the PID of the new process or -1 on error
-.global mordax_process_create
-.type mordax_process_create, %function
-mordax_process_create:
-	svc #MORDAX_SYSCALL_PROCESS_CREATE
-	bx lr
-
-@ Maps memory.
-@ Parameters:
-@ 	r0 = virtual target address
-@ 	r1 = physical source address
-@ 	r2 = size of the mapping
-@ 	r3 = pointer to a structure containing the desired memory attributes
-@ Return values:
-@ 	r0 = the target address, or 0 on error
-.global mordax_memory_map
-.type mordax_memory_map, %function
-mordax_memory_map:
-	svc #MORDAX_SYSCALL_MAP
-	bx lr
-
-@ Allocates and maps physical memory.
-@ Parameters:
-@ 	r0 = virtual target address
-@ 	r1 = pointer to the size of the memory to allocate and map
-@ 	r2 = pointer to a structure containing the desired memory attributes
-@ Return values:
-@ 	r0 = the target address or 0 on error
-@ Also updates the variable pointed to by the size argument.
-.global mordax_memory_map_alloc
-.type mordax_memory_map_alloc, %function
-mordax_memory_map_alloc:
-	svc #MORDAX_SYSCALL_MAP_ALLOC
-	bx lr
-
-@ Unmaps memory.
-@ Parameters:
-@ 	r0 = virtual address to begin unmapping at.
-@ 	r1 = size of the memory space to unmap.
-.global mordax_memory_unmap
-.type mordax_memory_unmap, %function
-mordax_memory_unmap:
-	svc #MORDAX_SYSCALL_UNMAP
-	bx lr
+syscall_wrapper mordax_system, #MORDAX_SYSCALL_SYSTEM
+syscall_wrapper mordax_thread_exit, #MORDAX_SYSCALL_THREAD_EXIT
+syscall_wrapper mordax_thread_create, #MORDAX_SYSCALL_THREAD_CREATE
+syscall_wrapper mordax_thread_join, #MORDAX_SYSCALL_THREAD_JOIN
+syscall_wrapper mordax_thread_info, #MORDAX_SYSCALL_THREAD_INFO
+syscall_wrapper mordax_process_create, #MORDAX_SYSCALL_PROCESS_CREATE
+syscall_wrapper mordax_memory_map, #MORDAX_SYSCALL_MAP
+syscall_wrapper mordax_memory_map_alloc, #MORDAX_SYSCALL_MAP_ALLOC
+syscall_wrapper mordax_memory_unmap, #MORDAX_SYSCALL_UNMAP
 
