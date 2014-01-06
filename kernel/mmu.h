@@ -107,6 +107,11 @@ void * mmu_map_device(physical_ptr physical, size_t size);
 void mmu_unmap(struct mmu_translation_table * table, void * virtual, size_t size);
 
 /**
+ * Invalidates the MMU cache for the current translation table.
+ */
+void mmu_invalidate(void);
+
+/**
  * Converts a virtual address to a physical address.
  * @param virtual the virtual address to convert.
  * @return the physical address corresponding to the specified virtual address.

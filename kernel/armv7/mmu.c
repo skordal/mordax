@@ -372,6 +372,11 @@ static void mmu_unmap_page(struct mmu_translation_table * t, void * virtual)
 		debug_printf("Cannot unmap memory: no existing entry\n");
 }
 
+void mmu_invalidate(void)
+{
+	asm volatile("mcr p15, 0, ip, c8, c7, 0\n\tisb\n\tdsb\n\t"); // clear the TLB
+}
+
 static uint32_t * get_pt_address(uint32_t * translation_table, int index)
 {
 	if((translation_table[index] & 0x3) != MMU_PAGE_TABLE_TYPE)

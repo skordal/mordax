@@ -228,6 +228,7 @@ void syscall_memory_map(struct thread_context * context)
 	void * retval = mmu_map(active_thread->parent->translation_table, start_physical,
 		start_virtual, real_size, attributes->type, attributes->permissions);
 	context_set_syscall_retval(context, retval);
+	mmu_invalidate();
 }
 
 void syscall_memory_unmap(struct thread_context * context)
@@ -236,12 +237,13 @@ void syscall_memory_unmap(struct thread_context * context)
 	size_t size = ((uint32_t) context_get_syscall_argument(context, 1) + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE;
 
 	// TODO: do better checking of what the memory area to unmap contains.
-	if(start_unmap >= CONFIG_KERNEL_SPLIT)
+	if((uint32_t) start_unmap >= CONFIG_KERNEL_SPLIT)
 	{
 		debug_printf("Error: cannot unmap memory in the kernel's address space\n");
 		return;
 	}
 
 	mmu_unmap(active_thread->parent->translation_table, start_unmap, size);
+	mmu_invalidate();
 }
 
