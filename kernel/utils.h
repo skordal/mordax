@@ -77,7 +77,7 @@ void * memset(void * restrict memory, char value, size_t length)
  * @param src the memory area to copy from.
  * @param length length of the memory area to copy.
  */
-void memcpy(void * dest, void * src, size_t length)
+void memcpy(void * dest, const void * src, size_t length)
 	__attribute((weak));
 
 /**

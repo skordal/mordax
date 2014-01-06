@@ -61,9 +61,11 @@ void * memset(void * restrict memory, char value, size_t length)
 	return memory;
 }
 
-void memcpy(void * dest, void * src, size_t length)
+void memcpy(void * dest, const void * src, size_t length)
 {
-	char * s = src, * d = dest;
+	const char * s = src;
+	char * d = dest;
+
 	for(int i = 0; i < length; ++i)
 		d[i] = s[i];
 }
