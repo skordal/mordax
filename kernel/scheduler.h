@@ -18,6 +18,9 @@
 /** The currently active thread. */
 extern struct thread * active_thread;
 
+/** The currently active process. */
+#define active_process	(active_thread != 0 ? active_thread->parent : 0)
+
 /**
  * Initializes the scheduler.
  * @param scheduler_timer the timer to use for the periodic scheduler interrupt.
