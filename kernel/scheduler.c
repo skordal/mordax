@@ -8,6 +8,7 @@
 #include "context.h"
 #include "debug.h"
 #include "kernel.h"
+#include "number_allocator.h"
 #include "process.h"
 #include "queue.h"
 #include "rbtree.h"
@@ -21,10 +22,8 @@ static struct timer_driver * scheduler_timer;
 static struct queue * running_queue;
 static struct queue * blocking_queue;
 
-// Next PID to allocate:
-static pid_t next_pid = 0;
-// Allocated PIDs:
-static struct rbtree * allocated_pids;
+// PID allocator object:
+static struct number_allocator * pid_allocator;
 
 // Currently running thread:
 struct thread * active_thread = 0;
@@ -51,7 +50,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 
 	running_queue = queue_new();
 	blocking_queue = queue_new();
-	allocated_pids = rbtree_new(0, 0, 0, 0);
+	pid_allocator = number_allocator_new();
 
 	// Create the idle process + thread:
 	debug_printf("Creating idle process...\n");
@@ -201,25 +200,12 @@ void scheduler_reschedule()
 
 pid_t scheduler_allocate_pid(void)
 {
-	pid_t retval = next_pid++;
-	pid_t first_attempt = retval;
-
-	while(rbtree_key_exists(allocated_pids, (void *) retval))
-	{
-		retval = next_pid++;
-
-		// Check if all possibilities have been tried:
-		if(first_attempt == retval)
-			return -1;
-	}
-
-	rbtree_insert(allocated_pids, (void *) retval, (void *) true);
-	return retval;
+	return number_allocator_allocate_num(pid_allocator) - 1;
 }
 
 void scheduler_free_pid(pid_t pid)
 {
-	rbtree_delete(allocated_pids, (void *) pid);
+	number_allocator_free_num(pid_allocator, pid + 1);
 }
 
 static void idle_thread_loop(void)
