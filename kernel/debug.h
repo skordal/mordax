@@ -17,8 +17,7 @@ void debug_set_output_driver(struct debug_driver * driver);
  * Prints a formatted string to the debug terminal.
  * @param format string specifying the format of the output string.
  */
-void debug_printf(const char * format, ...)
-	__attribute((format(printf, 1, 2)));
+void debug_printf(const char * format, ...);
 
 #endif
 
