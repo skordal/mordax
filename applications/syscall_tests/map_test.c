@@ -54,16 +54,7 @@ int main(void)
 	// Test the mapped memory:
 	for(int i = 0; i < 13; ++i)
 		testmem[i] = c[i];
-/*	for(int i = 0; i < 13; ++i)
-	{
-		if(testmem[i] != c[i])
-		{
-			mordax_system(MORDAX_SYSTEM_DEBUG, "Error while verifying mapped memory:");
-			mordax_system(MORDAX_SYSTEM_DEBUG, "written data differs from read data");
-			return 1;
-		}
-	}
-*/
+
 	mordax_system(MORDAX_SYSTEM_DEBUG, "Unmapping allocated memory...");
 	mordax_memory_unmap((void *) testmem, size);
 
