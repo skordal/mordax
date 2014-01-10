@@ -11,6 +11,11 @@
 struct process;
 
 /**
+ * @defgroup utilities Utility functions
+ * @{
+ */
+
+/**
  * Gets the base-2 logarithm of an unsigned integer.
  * @param x the number to get the logarithm of.
  * @return the base-2 logarithm of the input number.
@@ -33,6 +38,14 @@ void strcpy(char * restrict dest, const char * restrict src)
 	__attribute((weak));
 
 /**
+ * Duplicates a string.
+ * @param s the string to duplicate.
+ * @return a pointer to a newly allocated copy of the original string. This must
+ *         be freed using `mm_free`.
+ */
+char * strdup(const char * s) __attribute((weak));
+
+/**
  * Finds the first token in the input string, where tokens are delimited by
  * the delimiter character. The delimiter is replaced by 0 and the input string
  * pointer is set to point to the next token.
@@ -52,6 +65,15 @@ char * strsep(char ** string, char delim) __attribute((weak));
  * @return `true` if the strings are equal and `false` otherwise.
  */
 bool str_equals(const char * a, const char * b)
+	__attribute((weak));
+
+/**
+ * Lexically compares two strings.
+ * @param a the first string to compare.
+ * @param b the second string to compare.
+ * @return greater than 1 if a < b, 0 if a = b and less than 0 if b < b.
+ */
+int strcmp(const char * restrict a, const char * restrict b)
 	__attribute((weak));
 
 /**
@@ -106,5 +128,6 @@ le32 be2le32(be32 input) __attribute((weak));
  */
 le64 be2le64(be64 input) __attribute((weak));
 
+/** @} */
 #endif
 

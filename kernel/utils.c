@@ -3,10 +3,14 @@
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include "debug.h"
+#include "mm.h"
 #include "mmu.h"
 #include "process.h"
-#include "scheduler.h"
 #include "utils.h"
+
+// This file contains default implementations of all the utility functions.
+// They are all declared as weak symbols, so that they can be overridden
+// by target specific, optimized versions.
 
 size_t strlen(const char * s)
 {
@@ -19,6 +23,14 @@ void strcpy(char * restrict dest, const char * restrict src)
 {
 	for(unsigned i = 0; i < strlen(src) + 1; ++i)
 		dest[i] = src[i];
+}
+
+char * strdup(const char * s)
+{
+	char * retval = mm_allocate(strlen(s) + 1, MM_DEFAULT_ALIGNMENT,
+		MM_MEM_NORMAL);
+	strcpy(retval, s);
+	return retval;
 }
 
 char * strsep(char ** string, char delim)
@@ -51,6 +63,14 @@ bool str_equals(const char * a, const char * b)
 		if(a[i] != b[i])
 			return false;
 	return true;
+}
+
+int strcmp(const char * restrict a, const char * restrict b)
+{
+	for(int i = 0; a[i] != 0; ++i)
+		if(a[i] != b[i])
+			return a[i] - b[i];
+	return 0;
 }
 
 void * memset(void * restrict memory, char value, size_t length)
