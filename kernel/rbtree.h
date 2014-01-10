@@ -27,9 +27,9 @@ struct rbtree;
  * Key comparison type. Compares two keys, returning -1 if a < b,
  * 0 if a = b and 1 if a > b.
  */
-typedef int (*rbtree_key_compare_func)(void *, void *);
+typedef int (*rbtree_key_compare_func)(const void *, const void *);
 /** Key duplication function type. */
-typedef void * (*rbtree_key_duplicate_func)(void *);
+typedef void * (*rbtree_key_duplicate_func)(const void *);
 /** Key deallocation function type. */
 typedef void (*rbtree_key_free_func)(void *);
 /** Data deallocation function type. */
@@ -65,7 +65,7 @@ void rbtree_free(struct rbtree * tree);
  * @param key the key to insert at.
  * @param data the data to insert into the tree.
  */
-void rbtree_insert(struct rbtree * tree, void * key, void * data);
+void rbtree_insert(struct rbtree * tree, const void * key, void * data);
 
 /**
  * Deletes a node in a red-black tree.
@@ -74,7 +74,7 @@ void rbtree_insert(struct rbtree * tree, void * key, void * data);
  * @return the data associated with the deleted key, or 0 if the key did not
  *         exist.
  */
-void * rbtree_delete(struct rbtree * tree, void * key);
+void * rbtree_delete(struct rbtree * tree, const void * key);
 
 /**
  * Gets the data associated with a specified key in a red-black tree.
@@ -82,7 +82,7 @@ void * rbtree_delete(struct rbtree * tree, void * key);
  * @param key the key to look for.
  * @return the data associated with the key, or 0 if the key was not found.
  */
-void * rbtree_get_value(struct rbtree * tree, void * key);
+void * rbtree_get_value(struct rbtree * tree, const void * key);
 
 /**
  * Checks if a specified key exists in a red-black tree.
@@ -90,7 +90,7 @@ void * rbtree_get_value(struct rbtree * tree, void * key);
  * @param key the key to check for.
  * @return `true` if the key is in the tree, `false` otherwise.
  */
-bool rbtree_key_exists(struct rbtree * tree, void * key);
+bool rbtree_key_exists(struct rbtree * tree, const void * key);
 
 /** @} */
 
