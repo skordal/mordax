@@ -206,8 +206,6 @@ void * rbtree_delete(struct rbtree * tree, const void * key)
 
 	if(tree->free_key)
 		tree->free_key(node->key);
-	if(tree->free_data)
-		tree->free_data(node->data);
 	mm_free(node);
 	return retval;
 }
