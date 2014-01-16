@@ -15,10 +15,10 @@ struct thread_context;
 
 /**
  * Pointer to the current user-space context. When in kernel-mode code, this
- * variable always points to the context information stored when entering
- * kernel-mode. This is updated by interrupt handling code.
+ * variable always points to the context information that is stored by the
+ * interrupt handling code when entering kernel-mode.
  */
-extern struct thread_context * const current_context;
+extern struct thread_context * current_context;
 
 enum context_processor_mode { CONTEXT_USERMODE, CONTEXT_KERNELMODE };
 
