@@ -23,10 +23,10 @@
 				algo = "sha1";
 			};
 		};
-/*
+
 		ramdisk@1 {
 			description = "Initial process file";
-			data = /incbin/("./testfile.txt");
+			data = /incbin/("./init.bin");
 			type = "ramdisk";
 			arch = "arm";
 			os = "linux";
@@ -36,7 +36,7 @@
 				algo = "sha1";
 			};
 		};
-*/
+
 		fdt@1 {
 			description = "Device tree file";
 			data = /incbin/("./mordax.dtb");
@@ -56,7 +56,7 @@
 		config@1 {
 			description = "Mordax Microkernel OS";
 			kernel = "kernel@1";
-			/* ramdisk = "ramdisk@1"; */
+			ramdisk = "ramdisk@1";
 			fdt = "fdt@1";
 		};
 	};

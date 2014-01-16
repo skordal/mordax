@@ -17,6 +17,7 @@ OBJECT_FILES   := $(ASSEMBLER_FILES:.S=.o) $(SOURCE_FILES:.c=.o)
 all: $(OBJECT_FILES)
 	$(TARGET_LD) $(TARGET_LDFLAGS) -T $(TARGET_LDSCRIPT) -Map mordax.map -o mordax.elf \
 		$(OBJECT_FILES)
+	$(CP) $(TOPLEVEL)/$(KERNEL_INITPROC) init.bin
 	$(TARGET_OBJCOPY) -O binary -j .init -j .text -j .data \
 		mordax.elf mordax.bin
 	$(GZIP) -qf9 mordax.bin
