@@ -16,6 +16,17 @@ struct process;
  */
 
 /**
+ * Gets the minimum of two unsigned numbers.
+ * @param a the first number to compare.
+ * @param b the second number to compare.
+ * @return the value of the least of the two numbers.
+ */
+static inline unsigned int min(unsigned int a, unsigned int b)
+{
+	return a < b ? a : b;
+}
+
+/**
  * Gets the base-2 logarithm of an unsigned integer.
  * @param x the number to get the logarithm of.
  * @return the base-2 logarithm of the input number.
