@@ -23,7 +23,7 @@ SECTIONS
 		*(.data*)
 		*(.bss*)
 		image_end = .;
-		image_size = image_start - image_end;
+		image_size = image_end - image_start;
 	}
 
 	/DISCARD/ :
