@@ -19,15 +19,17 @@ Beware, that until there is a stable release, there may be issues in the code ca
 The kernel
 ----------
 
-The kernel is a mostly-microkernel, which aims to provide the least amount of neccessary functionality for applications to run. It is a work in progress, and currently only supports a limited set of system calls while being stricly single-processor (no locking or synchronization of any kind has been included yet).
+The kernel is a microkernel to the greatest degree possible, but includes drivers for printing debug output to a serial console, memory management and timer support for multitasking. It is a work in progress, and is currently stricly single-processor (no locking or synchronization is included, and the scheduler is primitive).
 
 The Applications
 ----------------
 
 * mt_test: a simple application used for testing the multithreading capabilities of the kernel.
+* map_test: a simple application used for testing memory mapping. It currently works only on the Beagleboard due to it mapping the UART.
+* ipc_test: a simple application used for testing IPC services and sockets.
 
 The Libraries
 -------------
 
-* libmordax: a library providing wrapper functions for the supported system calls.
+* libmordax: a library providing wrapper functions for all supported system calls.
 
