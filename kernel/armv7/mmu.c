@@ -169,12 +169,23 @@ void mmu_set_translation_table(struct mmu_translation_table * table)
 	void * table_physical = mmu_virtual_to_physical(user_translation_table->table);
 	++asid;
 
+	if(table == 0)
+	{
+		asm volatile(
+			// Simply set TTBCR.PD0 to disable the userspace translation table.
+			"mrc p15, 0, ip, c2, c0, 2\n\t"
+			"orr ip, #(1 << 4)\n\t"
+			"mcr p15, 0, ip, c2, c0, 2\n\t"
+			"isb\n\t");
+		return;
+	}
+
 	// Switch TTBR0 to point to the new translation table:
 	asm volatile(
 		// Set the TTBCR.PD0 bit to 1, disabling translation using TTBR0:
 		"mrc p15, 0, ip, c2, c0, 2\n\t"
 		"orr ip, #(1 << 4)\n\t"
-		"mcr p15, 0, ip, c2, c0, 2\n\r"
+		"mcr p15, 0, ip, c2, c0, 2\n\t"
 		"isb\n\r"
 
 		// Change the CONTEXTIDR:
