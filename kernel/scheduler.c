@@ -45,7 +45,7 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 	}
 
 	// Set up the timer:
-	scheduler_timer->set_interval(1000000);
+	scheduler_timer->set_interval(100000);
 	scheduler_timer->set_callback(scheduler_reschedule);
 
 	running_queue = queue_new();
@@ -88,7 +88,8 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 	mmu_unmap(0, initproc_image, initproc_size);
 
 	// Create the initial thread:
-	struct thread * init_thread = process_add_new_thread(initial_process, PROCESS_START_ADDRESS, PROCESS_DEFAULT_STACK_TOP);
+	struct thread * init_thread = process_add_new_thread(initial_process, (void *) PROCESS_START_ADDRESS,
+		(void *) PROCESS_DEFAULT_STACK_TOP);
 
 	// Add the new thread to the scheduler:
 	scheduler_add_thread(init_thread);
@@ -124,39 +125,31 @@ struct thread * scheduler_remove_thread(struct thread * t)
 		current = current->next;
 	}
 
-	// Remove the thread from the blocking queue:
-	// TODO: think this through more closely when blocking is needed...
-	current = blocking_queue->first;
-	while(current != 0)
-	{
-		struct thread * current_thread = current->data;
-		if(current_thread == t)
-		{
-			queue_remove_node(blocking_queue, current);
-			break;
-		}
-
-		current = current->next;
-	}
-
 	return t;
 }
 
 void scheduler_move_thread_to_blocking(struct thread * t)
 {
 	struct queue_node * current = running_queue->first;
-	while(current != 0)
+
+	if(t == active_thread)
+	{
+		context_copy(t->context, current_context);
+		queue_add_back(blocking_queue, t);
+		active_thread = 0;
+	} else while(current != 0)
 	{
 		struct thread * current_thread = current->data;
 		if(current_thread == t)
 		{
 			queue_remove_node(running_queue, current);
-			queue_add_back(blocking_queue, current->data);
+			queue_add_back(blocking_queue, current_thread);
 			break;
 		}
 
 		current = current->next;
 	}
+
 }
 
 void scheduler_move_thread_to_running(struct thread * t)
@@ -183,18 +176,16 @@ void scheduler_reschedule()
 
 	// If no thread can be run, schedule the idle thread:
 	if(!queue_remove_front(running_queue, (void **) &next_thread))
-	{
-		debug_printf("No thread to run, scheduling idle thread\n");
 		next_thread = idle_thread;
-	} else
-		debug_printf("Scheduling thread with PID %d, TID %d to run\n", next_thread->parent->pid,
-			next_thread->tid);
 
 	if(active_thread != 0)
 		context_copy(active_thread->context, current_context);
 	context_copy(current_context, next_thread->context);
 
-	mmu_set_translation_table(next_thread->parent->translation_table);
+	if(next_thread == idle_thread)
+		mmu_set_translation_table(0);
+	else
+		mmu_set_translation_table(next_thread->parent->translation_table);
 	active_thread = next_thread;
 }
 

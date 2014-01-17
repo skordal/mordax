@@ -18,7 +18,7 @@ else
 endif
 
 # Set the initial application for the kernel build process:
-export KERNEL_INITPROC ?= applications/syscall_tests/mt_test.bin
+export KERNEL_INITPROC ?= applications/syscall_tests/ipc_test.bin
 
 all: kernel applications
 

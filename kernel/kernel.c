@@ -9,6 +9,7 @@
 #include "mm.h"
 #include "mmu.h"
 #include "scheduler.h"
+#include "service.h"
 
 #include "drivers/debug/debug.h"
 #include "drivers/interrupts/intc.h"
@@ -86,10 +87,13 @@ void kernel_main(physical_ptr * device_tree, size_t dt_size)
 
 	debug_printf("Hardware initialization finished.\n\n");
 
+	// Initialize IPC:
+	services_initialize();
+
 	// Initialize the scheduler:
 	initialize_scheduler(mordax_node);
 
-	debug_printf("Initialization finished.\n\n");
+	debug_printf("Kernel initialization finished.\n\n");
 	while(true) asm volatile("wfi\n\t");
 }
 

@@ -207,7 +207,7 @@ struct mmu_translation_table * mmu_get_translation_table(void)
 	return user_translation_table;
 }
 
-bool mmu_access_permitted(struct mmu_translation_table * t, void * address, size_t size, int flags)
+bool mmu_access_permitted(struct mmu_translation_table * t, const void * address, size_t size, int flags)
 {
 	// TODO: implement access permission checking.
 	return true;

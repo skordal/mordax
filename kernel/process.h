@@ -6,8 +6,11 @@
 #define MORDAX_PROCESS_H
 
 #include "mmu.h"
+#include "number_allocator.h"
 #include "queue.h"
 #include "rbtree.h"
+#include "service.h"
+#include "socket.h"
 
 #include "api/memory.h"
 #include "api/process.h"
@@ -51,11 +54,20 @@ struct process
 	struct rbtree * allocated_tids;
 	tid_t next_tid;
 
+	struct rbtree * resource_table;
+	struct number_allocator * resnum_allocator;
+
 	uint32_t permissions;
 	gid_t owner_group;
 	uid_t owner_user;
 
 	size_t stack_size;
+};
+
+enum process_resource_type
+{
+	PROCESS_RESOURCE_SOCKET,
+	PROCESS_RESOURCE_SERVICE
 };
 
 /**
@@ -66,7 +78,8 @@ struct process
  * @param gid ID of the group owning the process.
  * @return the allocated process.
  */
-struct process * process_create(struct mordax_process_info * procinfo);
+struct process * process_create(struct mordax_process_info * procinfo)
+	__attribute((malloc));
 
 /**
  * Frees a process.
@@ -97,6 +110,39 @@ struct thread * process_add_new_thread(struct process * p, void * entry, void * 
  * @return a pointer to the removed thread.
  */
 struct thread * process_remove_thread(struct process * p, struct thread * t);
+
+/**
+ * Adds a resource to a process.
+ * @param p the process.
+ * @param type the resource type.
+ * @param resource_ptr pointer to the resource structure.
+ * @return a numeric handle to the resource, which can be returned by a syscall.
+ */
+unsigned int process_add_resource(struct process * p, enum process_resource_type type,
+	void * resource_ptr);
+
+/**
+ * Gets a resource by its identifier.
+ * @param p the process.
+ * @param identifier resource identifier.
+ * @param type the type of the returned resource is stored in the variable
+ *             pointed to by this parameter.
+ * @return a pointer to the process resource structure associated with the
+ *         structure.
+ */
+void * process_get_resource(struct process * p, unsigned int identifier,
+	enum process_resource_type * type);
+
+/**
+ * Removes a process resource.
+ * @param p the process.
+ * @param identifier resource identifier.
+ * @param type the type of the returned resource is stored in the variable
+ *             pointed to by this parameter.
+ * @return the removed resource.
+ */
+void * process_remove_resource(struct process * p, unsigned int identifier,
+	enum process_resource_type * type);
 
 /**
  * Looks up a thread by its TID.

@@ -28,14 +28,14 @@ void number_allocator_free(struct number_allocator * alloc);
  * @param alloc the number allocator to allocate from.
  * @return the next possible number or 0 if a number could not be allocated.
  */
-unsigned int number_allocator_allocate_num(struct number_allocator * alloc);
+int number_allocator_allocate_num(struct number_allocator * alloc);
 
 /**
  * Frees a previously allocated number.
  * @param alloc the number allocator to free to.
  * @param num the number to free.
  */
-void number_allocator_free_num(struct number_allocator * alloc, unsigned int num);
+void number_allocator_free_num(struct number_allocator * alloc, int num);
 
 /** @} */
 

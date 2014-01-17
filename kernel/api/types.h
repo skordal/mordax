@@ -34,5 +34,8 @@ typedef uint64_t le64;
 /** 32-bit generic little endian type. */
 typedef uint32_t le32;
 
+/** Resource type. */
+typedef int mordax_resource_t;
+
 #endif
 

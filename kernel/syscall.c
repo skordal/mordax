@@ -7,10 +7,12 @@
 #include "mm.h"
 #include "process.h"
 #include "scheduler.h"
+#include "service.h"
 #include "syscall.h"
 #include "thread.h"
 #include "utils.h"
 
+#include "api/errno.h"
 #include "api/syscalls.h"
 #include "api/system.h"
 #include "api/thread.h"
@@ -23,6 +25,7 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 		case MORDAX_SYSCALL_SYSTEM:
 			syscall_system(context);
 			break;
+
 		case MORDAX_SYSCALL_THREAD_EXIT:
 			syscall_thread_exit(context);
 			break;
@@ -32,9 +35,17 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 		case MORDAX_SYSCALL_THREAD_JOIN:
 			syscall_thread_join(context);
 			break;
+		case MORDAX_SYSCALL_THREAD_YIELD:
+			scheduler_reschedule();
+			break;
+		case MORDAX_SYSCALL_THREAD_INFO:
+			syscall_thread_info(context);
+			break;
+
 		case MORDAX_SYSCALL_PROCESS_CREATE:
 			syscall_process_create(context);
 			break;
+
 		case MORDAX_SYSCALL_MAP:
 			syscall_memory_map(context);
 			break;
@@ -44,6 +55,28 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 		case MORDAX_SYSCALL_UNMAP:
 			syscall_memory_unmap(context);
 			break;
+
+		case MORDAX_SYSCALL_SERVICE_CREATE:
+			syscall_service_create(context);
+			break;
+		case MORDAX_SYSCALL_SERVICE_LISTEN:
+			syscall_service_listen(context);
+			break;
+		case MORDAX_SYSCALL_SERVICE_CONNECT:
+			syscall_service_connect(context);
+			break;
+
+		case MORDAX_SYSCALL_SOCKET_SEND:
+			syscall_socket_send(context);
+			break;
+		case MORDAX_SYSCALL_SOCKET_RECEIVE:
+			syscall_socket_receive(context);
+			break;
+
+		case MORDAX_SYSCALL_RESOURCE_DESTROY:
+			syscall_resource_destroy(context);
+			break;
+
 		default: // TODO: handle unrecognized system calls
 			debug_printf("Unknown system call %d\n", syscall);
 			context_print(context);
@@ -89,6 +122,7 @@ void syscall_thread_create(struct thread_context * context)
 	scheduler_add_thread(new_thread);
 
 	context_set_syscall_retval(context, (void *) new_thread->tid);
+	scheduler_reschedule();
 }
 
 void syscall_thread_join(struct thread_context * context)
@@ -139,16 +173,21 @@ void syscall_process_create(struct thread_context * context)
 	struct thread * init_thread = 0;
 	struct mordax_process_info * procinfo_ptr = context_get_syscall_argument(context, 0);
 	struct mordax_process_info procinfo_cpy;
+	void * retval = 0;
 
-	debug_printf("PID %d, TID %d wants to create a new process\n", active_thread->parent->pid,
-		active_thread->tid);
-	context_print(context);
-	debug_printf("\tProcess info @ %p (copied to %p)\n", procinfo_ptr, &procinfo_cpy);
+	// Check for permission to create a new process:
+	if((active_thread->parent->permissions & MORDAX_PROCESS_PERMISSION_CREATE_PROC) == 0)
+	{
+		debug_printf("Error: cannot create process, calling process lacks permission to do so\n");
+		context_set_syscall_retval(context, (void *) -EPERM);
+		return;
+	}
 
 	if(!mmu_access_permitted(0, procinfo_ptr, sizeof(struct mordax_process_info), MMU_ACCESS_READ|MMU_ACCESS_USER))
 	{
 		// TODO: terminate calling process.
 		debug_printf("Error: cannot create process: cannot access process info structure\n");
+		retval = (void *) -EFAULT;
 		goto _error_return;
 	} else {
 		// Copy the process info to allow access while switching between address spaces
@@ -161,6 +200,7 @@ void syscall_process_create(struct thread_context * context)
 	if(proc == 0)
 	{
 		debug_printf("Error: could not create process: process_create failed\n");
+		retval = (void *) -ENOEXEC;
 		goto _error_return;
 	}
 
@@ -168,13 +208,14 @@ void syscall_process_create(struct thread_context * context)
 	init_thread = process_add_new_thread(proc, procinfo_cpy.entry_point, (void *) PROCESS_DEFAULT_STACK_TOP);
 	if(init_thread == 0)
 	{
-		debug_printf("Error: could not create process: could not create initial thread\n");
+		debug_printf("Error: could not create process: could not create thread\n");
+		retval = (void *) -ENOEXEC;
 		goto _error_return;
 	}
 
 	scheduler_add_thread(init_thread);
 	context_set_syscall_retval(context, (void *) proc->pid);
-//	scheduler_reschedule();
+	scheduler_reschedule();
 	return;
 
 _error_return:
@@ -182,16 +223,16 @@ _error_return:
 		thread_free(init_thread, -1); // also frees the process
 	else if(proc != 0)
 		process_free(proc);
-	context_set_syscall_retval(context, (void *) -1);
+	context_set_syscall_retval(context, retval);
 }
 
 void syscall_memory_map(struct thread_context * context)
 {
 	// Check for required permissions:
-	if((active_thread->parent->permissions & MORDAX_PROCESS_PERMISSION_MAP_MEMORY) == 0)
+	if((active_process->permissions & MORDAX_PROCESS_PERMISSION_MAP_MEMORY) == 0)
 	{
 		debug_printf("Error: cannot map memory, calling process lacks permissions to do so\n");
-		context_set_syscall_retval(context, (void *) -1);
+		context_set_syscall_retval(context, (void *) -EPERM);
 		return;
 	}
 
@@ -203,7 +244,7 @@ void syscall_memory_map(struct thread_context * context)
 	if(!mmu_access_permitted(0, attributes, sizeof(struct mordax_memory_attributes), MMU_ACCESS_READ|MMU_ACCESS_USER))
 	{
 		debug_printf("Error: cannot map memory, cannot access attributes structure\n");
-		context_set_syscall_retval(context, 0);
+		context_set_syscall_retval(context, (void *) -EFAULT);
 		return;
 	}
 
@@ -216,13 +257,13 @@ void syscall_memory_map(struct thread_context * context)
 	if((uint32_t) start_virtual >= CONFIG_KERNEL_SPLIT)
 	{
 		debug_printf("Error: target address cannot be in kernel space\n");
-		context_set_syscall_retval(context, 0);
+		context_set_syscall_retval(context, (void *) -EFAULT);
 		return;
 	}
 	if(mm_is_physical_managed(start_physical))
 	{
 		debug_printf("Error: cannot map memory managed by the physical memory manager\n");
-		context_set_syscall_retval(context, 0);
+		context_set_syscall_retval(context, (void *) -EFAULT);
 		return;
 	}
 
@@ -243,28 +284,28 @@ void syscall_memory_map_alloc(struct thread_context * context)
 	if(!mmu_access_permitted(0, size, sizeof(size_t), MMU_ACCESS_READ|MMU_ACCESS_WRITE|MMU_ACCESS_USER))
 	{
 		debug_printf("Error: cannot map memory, cannot access memory area size\n");
-		context_set_syscall_retval(context, 0);
+		context_set_syscall_retval(context, (void *) -EFAULT);
 		return;
 	}
 
 	if(!mmu_access_permitted(0, attributes, sizeof(struct mordax_memory_attributes), MMU_ACCESS_READ|MMU_ACCESS_USER))
 	{
 		debug_printf("Error: cannot map memory, cannot access memory attributes\n");
-		context_set_syscall_retval(context, 0);
+		context_set_syscall_retval(context, (void *) -EFAULT);
 		return;
 	}
 
 	if(*size > MM_MAXIMUM_PHYSICAL_BLOCK_SIZE)
 	{
 		debug_printf("Error: cannot map memory, memory request too large\n");
-		context_set_syscall_retval(context, 0);
+		context_set_syscall_retval(context, (void *) -ENOMEM);
 		return;
 	}
 
 	if((uint32_t) target > CONFIG_KERNEL_SPLIT)
 	{
 		debug_printf("Error: cannot map memory, target address is in kernel space\n");
-		context_set_syscall_retval(context, 0);
+		context_set_syscall_retval(context, (void *) -EFAULT);
 		return;
 	}
 
@@ -292,5 +333,246 @@ void syscall_memory_unmap(struct thread_context * context)
 
 	mmu_unmap(active_thread->parent->translation_table, start_unmap, size);
 	mmu_invalidate();
+}
+
+void syscall_service_create(struct thread_context * context)
+{
+	const char * name = context_get_syscall_argument(context, 0);
+	size_t name_length = (size_t) context_get_syscall_argument(context, 1);
+
+	if((active_process->permissions & MORDAX_PROCESS_PERMISSION_SERVICE) == 0)
+	{
+		debug_printf("Error: cannot create service, not permitted\n");
+		context_set_syscall_retval(context, (void *) -EPERM);
+		return;
+	}
+
+	if(!mmu_access_permitted(0, (void *) name, name_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		debug_printf("Error: cannot access service name, memory access denied\n");
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	char * service_name = mm_allocate(name_length + 1,
+		MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	memclr(service_name, name_length + 1);
+	memcpy(service_name, name, name_length);
+
+	struct service * retval = service_create(service_name, active_process);
+	if(retval != 0)
+		context_set_syscall_retval(context,
+			(void *) process_add_resource(active_process, PROCESS_RESOURCE_SERVICE, retval));
+	else
+		context_set_syscall_retval(context, (void *) -ENOMEM); // FIXME: may also be due to invalid/existing service name.
+
+	mm_free(service_name);
+}
+
+void syscall_service_listen(struct thread_context * context)
+{
+	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
+	debug_printf("PID %d, TID %d wants to listen to service %d\n",
+		active_process->pid, active_thread->tid, identifier);
+
+	if((active_process->permissions & MORDAX_PROCESS_PERMISSION_SERVICE) == 0)
+	{
+		debug_printf("Error: cannot listen on service, operation not permitted\n");
+		context_set_syscall_retval(context, (void *) -EPERM);
+		return;
+	}
+
+	enum process_resource_type restype;
+	struct service * svc = process_get_resource(active_process, identifier, &restype);
+	if(svc == 0)
+	{
+		debug_printf("Error: no resource associated with identifier %d\n",
+			identifier);
+		context_set_syscall_retval(context, (void *) -EINVAL);
+		return;
+	} else if(restype != PROCESS_RESOURCE_SERVICE)
+	{
+		debug_printf("Error: resource associated with identifier %d is not a service\n",
+			identifier);
+		context_set_syscall_retval(context, (void *) -EINVAL);
+		return;
+	}
+
+	bool blocking = false;
+	struct socket * server_socket = 0;
+	int retval = service_listen(svc, active_thread, &server_socket, &blocking);
+
+	if(blocking)
+	{
+		scheduler_move_thread_to_blocking(active_thread);
+		scheduler_reschedule();
+	} else if(retval < 0)
+	{
+		context_set_syscall_retval(context, (void *) retval);
+	} else {
+		retval = process_add_resource(active_process, PROCESS_RESOURCE_SOCKET,
+			server_socket);
+		context_set_syscall_retval(context, (void *) retval);
+	}
+}
+
+void syscall_service_connect(struct thread_context * context)
+{
+	char * name = context_get_syscall_argument(context, 0);
+	size_t name_length = (size_t) context_get_syscall_argument(context, 1);
+
+	if(!mmu_access_permitted(0, (void *) name, name_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		debug_printf("Error: cannot access service name, memory access not permitted\n");
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	char * service_name = mm_allocate(name_length + 1, MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	memclr(service_name, name_length + 1);
+	memcpy(service_name, name, name_length + 1);
+
+	struct service * svc = service_lookup(service_name);
+	if(svc == 0)
+	{
+		debug_printf("Error: the service \"%s\" does not exist\n");
+		context_set_syscall_retval(context, (void *) -ENOENT);
+		goto _cleanup;
+	} else
+		debug_printf("Connecting to service \"%s\"\n", service_name);
+
+	struct socket * client_socket = 0;
+	bool block = false;
+	int retval = service_connect(svc, active_thread, &client_socket, &block);
+
+	if(block)
+	{
+		scheduler_move_thread_to_blocking(active_thread);
+		scheduler_reschedule();
+	} else if(retval < 0)
+	{
+		context_set_syscall_retval(context, (void *) retval);
+	} else {
+		retval = process_add_resource(active_process, PROCESS_RESOURCE_SOCKET,
+			client_socket);
+		context_set_syscall_retval(context, (void *) retval);
+	}
+
+_cleanup:
+	mm_free(service_name);
+}
+
+void syscall_socket_send(struct thread_context * context)
+{
+	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
+	const void * buffer = context_get_syscall_argument(context, 1);
+	size_t buffer_length = (size_t) context_get_syscall_argument(context, 2);
+
+	debug_printf("PID %d, TID %d wants to send %d bytes on socket %d\n", active_process->pid,
+		active_thread->tid, buffer_length, identifier);
+
+	if(!mmu_access_permitted(0, buffer, buffer_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		debug_printf("Error: cannot send message, buffer pointer points to invalid memory\n");
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	enum process_resource_type restype;
+	struct socket * send_socket = process_get_resource(active_process, identifier, &restype);
+	if(restype != PROCESS_RESOURCE_SOCKET)
+	{
+		debug_printf("Error: cannot send message, resource is not a socket\n");
+		context_set_syscall_retval(context, (void *) -ENOTSOCK);
+		return;
+	}
+
+	if(send_socket->endpoint == 0)
+	{
+		debug_printf("Error: cannot send message, socket is not connected\n");
+		context_set_syscall_retval(context, (void *) -ENOTCONN);
+		return;
+	}
+
+	bool block = false;
+	int retval = socket_send(send_socket, active_thread, buffer, buffer_length, &block);
+
+	if(block)
+	{
+		scheduler_move_thread_to_blocking(active_thread);
+		scheduler_reschedule();
+	} else
+		context_set_syscall_retval(context, (void *) retval);
+}
+
+void syscall_socket_receive(struct thread_context * context)
+{
+	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
+	void * buffer = context_get_syscall_argument(context, 1);
+	size_t buffer_length = (size_t) context_get_syscall_argument(context, 2);
+
+	debug_printf("PID %d, TID %d wants to receive %d bytes on socket %d\n", active_process->pid,
+		active_thread->tid, buffer_length, identifier);
+
+	if(!mmu_access_permitted(0, buffer, buffer_length, MMU_ACCESS_WRITE|MMU_ACCESS_USER))
+	{
+		debug_printf("Error: cannot receive message, buffer pointer points to invalid memory\n");
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	enum process_resource_type restype;
+	struct socket * receive_socket = process_get_resource(active_process, identifier, &restype);
+	if(restype != PROCESS_RESOURCE_SOCKET)
+	{
+		debug_printf("Error: cannot receive message, resource is not a socket\n");
+		context_set_syscall_retval(context, (void *) -ENOTSOCK);
+		return;
+	}
+
+	if(receive_socket->endpoint == 0)
+	{
+		debug_printf("Error: cannot receive message, socket is not connected\n");
+		context_set_syscall_retval(context, (void *) -ENOTCONN);
+		return;
+	}
+
+	bool block = false;
+	int retval = socket_receive(receive_socket, active_thread, buffer, buffer_length, &block);
+
+	if(block)
+	{
+		scheduler_move_thread_to_blocking(active_thread);
+		scheduler_reschedule();
+	} else
+		context_set_syscall_retval(context, (void *) retval);
+}
+
+void syscall_resource_destroy(struct thread_context * context)
+{
+	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
+	debug_printf("PID %d, TID %d wants to destroy resource %d\n",
+		active_process->pid, active_thread->tid, identifier);
+
+	enum process_resource_type restype;
+	void * res = process_remove_resource(active_process, identifier, &restype);
+
+	if(res == 0)
+		return;
+
+	switch(restype)
+	{
+		case PROCESS_RESOURCE_SERVICE:
+			service_destroy(res);
+			break;
+		case PROCESS_RESOURCE_SOCKET:
+			socket_destroy(res);
+			break;
+		default:
+			context_set_syscall_retval(context, (void *) -EINVAL);
+	}
+
+	debug_printf("Service removed\n");
+	context_set_syscall_retval(context, (void *) 0);
 }
 

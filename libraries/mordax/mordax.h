@@ -41,6 +41,11 @@ tid_t mordax_thread_create(void * entry, void * stack);
 int mordax_thread_join(tid_t tid);
 
 /**
+ * Yields execution for another thread.
+ */
+void mordax_thread_yield(void);
+
+/**
  * Gets information about the current thread/process.
  * @param function specifies which information to return. The valid constants
  *                 for this parameter are defined in `private/thread.h`.

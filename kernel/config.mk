@@ -24,10 +24,13 @@ SOURCE_FILES += \
 	irq.c \
 	kernel.c \
 	mm.c \
+	number_allocator.c \
 	queue.c \
 	rbtree.c \
 	process.c \
 	scheduler.c \
+	service.c \
+	socket.c \
 	stack.c \
 	syscall.c \
 	thread.c \

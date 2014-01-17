@@ -77,7 +77,53 @@ void syscall_memory_map_alloc(struct thread_context * context);
  */
 void syscall_memory_unmap(struct thread_context * context);
 
+/**
+ * Creates a new IPC service. Takes the name of the service to
+ * create and the length of the name (not including terminating
+ * NULL byte) as arguments.
+ */
+void syscall_service_create(struct thread_context * context);
+
+/**
+ * Listens on an IPC service. Takes the service handle as argument.
+ * Returns a handle to the socket of connecting clients.
+ */
+void syscall_service_listen(struct thread_context * context);
+
+/**
+ * Destroys an IPC service. Takes the service handle returned from
+ * the service_create syscall as argument.
+ */
+void syscall_service_destroy(struct thread_context * context);
+
+/**
+ * Connects to an IPC service. Takes two arguments; the name of
+ * the service to connect to and the length of the name (not including
+ * the terminating NULL byte). Returns a handle to the connected socket.
+ */
+void syscall_service_connect(struct thread_context * context);
+
+/**
+ * Sends a message on a connected IPC socket. Takes three arguments, the
+ * identifier of the socket, the data to send and the length of the data.
+ * Returns the number of bytes sent or a negative error code.
+ */
+void syscall_socket_send(struct thread_context * context);
+
+/**
+ * Receives a message from a connected IPC socket. Takes three arguments,
+ * the identifier of the socket, the location to store the received data and
+ * the length of the buffer. Returns the number of bytes received or a negative
+ * error code.
+ */
+void syscall_socket_receive(struct thread_context * context);
+
+/**
+ * Frees and destroys a resource. Takes the identifier of the resource
+ * as argument.
+ */
+void syscall_resource_destroy(struct thread_context * context);
+
 /** @} */
 
 #endif
-

@@ -27,16 +27,26 @@ void number_allocator_free(struct number_allocator * alloc)
 	mm_free(alloc);
 }
 
-unsigned int number_allocator_allocate_num(struct number_allocator * alloc)
+int number_allocator_allocate_num(struct number_allocator * alloc)
 {
-	unsigned int retval = ++alloc->next_num;
-	unsigned int first_attempt = retval;
+	if(alloc->next_num < 0)
+		alloc->next_num = 0;
+
+	int retval = ++alloc->next_num;
+	int first_attempt = retval;
+
+	if(alloc->next_num < 0)
+		alloc->next_num = 0;
+	if(retval <= 0)
+		retval = ++alloc->next_num;
 
 	while(rbtree_key_exists(alloc->allocated_nums, (void *) retval))
 	{
 		retval = ++alloc->next_num;
 		if(retval == 0)
 			retval = ++alloc->next_num;
+		else if(retval < 0)
+			retval = (alloc->next_num = 1);
 
 		// Check if all possibilities have been tried:
 		if(first_attempt == retval)
@@ -47,7 +57,7 @@ unsigned int number_allocator_allocate_num(struct number_allocator * alloc)
 	return retval;
 }
 
-void number_allocator_free_num(struct number_allocator * alloc, unsigned int num)
+void number_allocator_free_num(struct number_allocator * alloc, int num)
 {
 	rbtree_delete(alloc->allocated_nums, (void *) num);
 }

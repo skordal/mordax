@@ -3,7 +3,7 @@
 # Report bugs and issues on <http://github.com/skordal/mordax/issues>
 .PHONY: all clean
 
-TESTAPPS ?= mt_test map_test
+TESTAPPS ?= ipc_test mt_test map_test
 
 all: $(TESTAPPS)
 

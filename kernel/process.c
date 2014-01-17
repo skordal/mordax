@@ -8,12 +8,22 @@
 #include "process.h"
 #include "rbtree.h"
 #include "scheduler.h"
+#include "service.h"
 #include "utils.h"
+
+struct process_resource
+{
+	enum process_resource_type type;
+	int identifier;
+	void * resource_ptr;
+};
 
 // Allocates a thread ID for a thread added to the process.
 static tid_t allocate_tid(struct process * p, struct thread * t);
 // Frees a thread ID for a thread.
 static void free_tid(struct process * p, tid_t tid);
+// Frees a resource:
+static void free_resource(void * data);
 
 struct process * process_create(struct mordax_process_info * procinfo)
 {
@@ -24,6 +34,9 @@ struct process * process_create(struct mordax_process_info * procinfo)
 
 	retval->next_tid = 0;
 	retval->allocated_tids = rbtree_new(0, 0, 0, 0);
+
+	retval->resource_table = rbtree_new(0, 0, 0, free_resource);
+	retval->resnum_allocator = number_allocator_new();
 
 	retval->owner_group = procinfo->gid;
 	retval->owner_user = procinfo->uid;
@@ -161,12 +174,34 @@ _error_return:
 
 void process_free(struct process * p)
 {
-	debug_printf("Freeing process %d\n", p->pid);
+	rbtree_free(p->resource_table); // also frees the resources in the table
 	queue_free(p->threads, (queue_data_free_func) thread_free);
+	number_allocator_free(p->resnum_allocator);
 	scheduler_free_pid(p->pid);
 	rbtree_free(p->allocated_tids);
 	mmu_free_translation_table(p->translation_table);
 	mm_free(p);
+}
+
+static void free_resource(void * data)
+{
+	struct process_resource * res = data;
+	if(res == 0)
+		return;
+
+	switch(res->type)
+	{
+		case PROCESS_RESOURCE_SOCKET:
+			socket_destroy(res->resource_ptr);
+			break;
+		case PROCESS_RESOURCE_SERVICE:
+			service_destroy(res->resource_ptr);
+			break;
+		default:
+			break;
+	}
+
+	mm_free(res);
 }
 
 void process_add_thread(struct process * p, struct thread * t)
@@ -213,6 +248,52 @@ struct thread * process_remove_thread(struct process * p, struct thread * t)
 	}
 
 	return t;
+}
+
+unsigned int process_add_resource(struct process * p, enum process_resource_type type,
+	void * resource_ptr)
+{
+	unsigned int identifier = number_allocator_allocate_num(p->resnum_allocator);
+	if(identifier == 0)
+		return 0;
+
+	struct process_resource * res = mm_allocate(sizeof(struct process_resource),
+		MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+
+	res->type = type;
+	res->identifier = identifier;
+	res->resource_ptr = resource_ptr;
+
+	rbtree_insert(p->resource_table, (void *) identifier, (void *) res);
+	return identifier;
+}
+
+void * process_get_resource(struct process * p, unsigned int identifier,
+	enum process_resource_type * type)
+{
+	struct process_resource * res = rbtree_get_value(p->resource_table, (void *) identifier);
+	if(res == 0)
+		return 0;
+
+	*type = res->type;
+	return res->resource_ptr;
+}
+
+void * process_remove_resource(struct process * p, unsigned int identifier,
+	enum process_resource_type * type)
+{
+	struct process_resource * resource = rbtree_delete(p->resource_table, (void *) identifier);
+	void * retval = 0;
+
+	if(resource != 0)
+	{
+		number_allocator_free_num(p->resnum_allocator, resource->identifier);
+		*type = resource->type;
+		retval = resource->resource_ptr;
+		mm_free(resource);
+	}
+
+	return retval;
 }
 
 struct thread * process_get_thread_by_tid(struct process * p, tid_t tid)

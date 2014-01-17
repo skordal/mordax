@@ -61,7 +61,7 @@ struct mmu_translation_table * mmu_get_translation_table(void);
  * @param flags flags describing the access to check for.
  * @return `true` if the access is permitted, `false` otherwise.
  */
-bool mmu_access_permitted(struct mmu_translation_table * table, void * address, size_t size, int flags);
+bool mmu_access_permitted(struct mmu_translation_table * table, const void * address, size_t size, int flags);
 
 /**
  * Creates a memory mapping. The address is mapped in either the userspace
