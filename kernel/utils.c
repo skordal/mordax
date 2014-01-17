@@ -95,6 +95,12 @@ void memcpy_p(void * dest_addr, struct process * dest_proc,
 {
 	struct mmu_translation_table * current_tt = mmu_get_translation_table();
 
+	if(dest_proc == src_proc)
+	{
+		memcpy(dest_addr, src_addr, length);
+		return;
+	}
+
 	for(int i = 0; i < length; ++i)
 	{
 		mmu_set_translation_table(src_proc->translation_table);
