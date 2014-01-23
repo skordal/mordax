@@ -19,13 +19,13 @@ all: $(OBJECT_FILES)
 clean:
 	-$(RM) $(ASSEMBLER_FILES:.S=.o)
 	-$(RM) libmordax.a
-	-$(RM) -r private
+	-$(RM) -r mordax
 
 link-headers:
-	test -d private || mkdir private
+	test -d mordax || mkdir mordax
 	for file in $$(ls -1 $(TOPLEVEL)/kernel/api); do \
-		if [ ! -f private/$$file ]; then \
-			$(LN) -sf $(TOPLEVEL)/kernel/api/$$file private/$$file; \
+		if [ ! -f mordax/$$file ]; then \
+			$(LN) -sf $(TOPLEVEL)/kernel/api/$$file mordax/$$file; \
 		fi; \
 	done
 

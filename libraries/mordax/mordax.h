@@ -5,10 +5,11 @@
 #ifndef __MORDAX_H__
 #define __MORDAX_H__
 
-#include <private/memory.h>
-#include <private/process.h>
-#include <private/system.h>
-#include <private/types.h>
+#include <mordax/memory.h>
+#include <mordax/process.h>
+#include <mordax/system.h>
+#include <mordax/thread.h>
+#include <mordax/types.h>
 
 /**
  * System administration system call.

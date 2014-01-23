@@ -4,7 +4,7 @@
 .syntax unified
 .arm
 
-#include <private/syscalls.h>
+#include <mordax/syscalls.h>
 
 .section .text
 

@@ -5,7 +5,7 @@
 #ifndef __MORDAX_IPC_H__
 #define __MORDAX_IPC_H__
 
-#include <private/types.h>
+#include <mordax/types.h>
 
 /**
  * Creates a new service.
