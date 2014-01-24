@@ -109,5 +109,11 @@ void * mordax_memory_map_alloc(void * target, size_t * size,
  */
 void mordax_memory_unmap(void * virtual, size_t size);
 
+/**
+ * Frees a resource.
+ * @param identifier the resource identifier.
+ */
+void mordax_resource_destroy(mordax_resource_t identifier);
+
 #endif
 

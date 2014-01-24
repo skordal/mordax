@@ -50,11 +50,5 @@ int mordax_socket_send(mordax_resource_t socket, const void * buffer, size_t len
  */
 int mordax_socket_receive(mordax_resource_t socket, void * buffer, size_t length);
 
-/**
- * Frees a resource.
- * @param identifier the resource identifier.
- */
-void mordax_resource_destroy(mordax_resource_t identifier);
-
 #endif
 
