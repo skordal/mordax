@@ -22,5 +22,6 @@ clean:
 	done
 
 $(LIBRARIES):
-	@$(MAKE) -C $@
+	@$(MAKE) -C $@ all install
+
 

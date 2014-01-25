@@ -29,6 +29,18 @@ link-headers:
 		fi; \
 	done
 
+install: all
+	test -d $(TARGET_LIBDIR) || mkdir -p $(TARGET_LIBDIR)
+	$(CP) -u libmordax.a $(TARGET_LIBDIR)
+	test -d $(TARGET_INCLUDEDIR) || mkdir -p $(TARGET_INCLUDEDIR)
+	$(CP) -u mordax.h mordax-ipc.h $(TARGET_INCLUDEDIR)
+	test -d $(TARGET_INCLUDEDIR)/mordax || mkdir -p $(TARGET_INCLUDEDIR)/mordax
+	for file in $$(ls -1 mordax/); do \
+		if [ ! -f $(TARGET_INCLUDEDIR)/mordax/$$file ]; then \
+			$(CP) -v mordax/$$file $(TARGET_INCLUDEDIR)/mordax/$$file; \
+		fi; \
+	done
+
 $(OBJECT_FILES): link-headers
 
 %.o: %.S

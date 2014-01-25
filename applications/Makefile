@@ -9,8 +9,9 @@ ifeq ($(TOPLEVEL),)
 endif
 
 # Application flags:
-TARGET_CFLAGS += -I$(TOPLEVEL)/libraries/mordax -O2 -Wall -std=gnu11
-TARGET_LDFLAGS += -L$(TOPLEVEL)/libraries/mordax
+TARGET_CFLAGS += -I$(TARGET_INCLUDEDIR) \
+	-O2 -Wall -std=gnu11
+TARGET_LDFLAGS += -L$(TARGET_LIBDIR)
 
 # List of applications to build:
 APPLICATIONS ?= \
