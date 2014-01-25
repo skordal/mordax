@@ -1,14 +1,11 @@
-// The Mordax Microkernel OS Memory Mapping Test Programme
-// (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
+// The Mordax Microkernel OS IPC Test Programme
+// (c) Kristian Klomsten Skordal <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include <stdint.h>
 
 #include <mordax.h>
 #include <mordax-ipc.h>
-
-// Size of the application image:
-extern void * image_size;
 
 static uint32_t test_thread_stack[256];
 
