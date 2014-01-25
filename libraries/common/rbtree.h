@@ -1,11 +1,11 @@
-// The Mordax Microkernel
-// (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
+// The Mordax Operating System Common Modules Library
+// (c) Kristian Klomsten Skordal <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #ifndef MORDAX_RBTREE_H
 #define MORDAX_RBTREE_H
 
-#include "api/types.h"
+#include <stdbool.h>
 
 /**
  * @defgroup rbtree Red-Black Tree Functions

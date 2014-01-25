@@ -1,11 +1,18 @@
-// The Mordax Microkernel
-// (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
+// The Mordax Operating System Common Modules Library
+// (c) Kristian Klomsten Skordal <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
-#include "debug.h"
-#include "mm.h"
 #include "rbtree.h"
-#include "utils.h"
+
+#ifdef COMPILING_KERNEL
+#	include "mm.h"
+#	include "utils.h"
+#	define malloc(size)	mm_allocate(size, MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL)
+#	define free(x)		mm_free(x)
+#else
+#	include <stdlib.h>
+#	include <string.h>
+#endif
 
 #define RBTREE_BLACK	0
 #define RBTREE_RED	1
@@ -42,14 +49,14 @@ struct rbtree * rbtree_new(rbtree_key_compare_func key_compare, rbtree_key_free_
 	rbtree_key_duplicate_func key_dup, rbtree_data_free_func data_free)
 
 {
-	struct rbtree * retval = mm_allocate(sizeof(struct rbtree), MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	struct rbtree * retval = malloc(sizeof(struct rbtree));
 	retval->compare_key = key_compare ? key_compare : compare_pointer_values;
 	retval->free_key = key_free;
 	retval->dup_key = key_dup;
 	retval->free_data = data_free;
 
-	retval->nil = mm_allocate(sizeof(struct rbtree_node), MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
-	memclr(retval->nil, sizeof(struct rbtree_node));
+	retval->nil = malloc(sizeof(struct rbtree_node));
+	memset(retval->nil, 0, sizeof(struct rbtree_node));
 	retval->nil->color = RBTREE_BLACK;
 	retval->nil->left = retval->nil;
 	retval->nil->right = retval->nil;
@@ -63,7 +70,7 @@ void rbtree_free(struct rbtree * tree)
 {
 	if(tree->root != 0)
 		free_node_recursively(tree, tree->root);
-	mm_free(tree->nil);
+	free(tree->nil);
 }
 
 static void free_node_recursively(struct rbtree * tree, struct rbtree_node * node)
@@ -77,13 +84,12 @@ static void free_node_recursively(struct rbtree * tree, struct rbtree_node * nod
 		tree->free_data(node->data);
 	if(tree->free_key)
 		tree->free_key(node->key);
-	mm_free(node);
+	free(node);
 }
 
 void rbtree_insert(struct rbtree * tree, const void * key, void * data)
 {
-	struct rbtree_node * new_node = mm_allocate(sizeof(struct rbtree_node),
-		MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	struct rbtree_node * new_node = malloc(sizeof(struct rbtree_node));
 	new_node->left = tree->nil;
 	new_node->right = tree->nil;
 	new_node->color = RBTREE_RED;
@@ -206,7 +212,8 @@ void * rbtree_delete(struct rbtree * tree, const void * key)
 
 	if(tree->free_key)
 		tree->free_key(node->key);
-	mm_free(node);
+	free(node);
+
 	return retval;
 }
 

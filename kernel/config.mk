@@ -13,7 +13,8 @@ RM      ?= rm
 TARGET_ASFLAGS += -Wall -g -O2 -ffreestanding -std=gnu11 -I$(TOPLEVEL)/kernel \
 	-I$(TOPLEVEL)/kernel/api -DASSEMBLER
 TARGET_CFLAGS  += -Wall -g -O2 -ffreestanding -std=gnu11 -I$(TOPLEVEL)/kernel \
-	-I$(TOPLEVEL)/kernel/api -Werror=implicit-function-declaration
+	-I$(TOPLEVEL)/kernel/api -Werror=implicit-function-declaration \
+	-DCOMPILING_KERNEL
 TARGET_LDFLAGS += -nostdlib
 
 # Target independent source files:
@@ -26,13 +27,10 @@ SOURCE_FILES += \
 	lock.c \
 	mm.c \
 	number_allocator.c \
-	queue.c \
-	rbtree.c \
 	process.c \
 	scheduler.c \
 	service.c \
 	socket.c \
-	stack.c \
 	syscall.c \
 	thread.c \
 	utils.c

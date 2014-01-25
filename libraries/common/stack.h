@@ -5,7 +5,7 @@
 #ifndef MORDAX_STACK_H
 #define MORDAX_STACK_H
 
-#include "api/types.h"
+#include <stdbool.h>
 
 /**
  * @defgroup stack Stack functions

@@ -12,6 +12,9 @@ export HOST_CFLAGS  ?= $(CFLAGS) -O2 -Wall -g
 export HOST_LDFLAGS ?= $(LDFLAGS)
 
 # Target independent build tools:
-export CP ?= cp
-export LN ?= ln
+export CP    ?= cp
+export FIND  ?= find
+export LN    ?= ln
+export MKDIR ?= mkdir
+export TEST  ?= test
 

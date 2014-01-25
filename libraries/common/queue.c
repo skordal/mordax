@@ -1,16 +1,23 @@
-// The Mordax Microkernel
-// (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
+// The Mordax Operating System Common Modules Library
+// (c) Kristian Klomsten Skordal <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include "queue.h"
 
-#include "mm.h"
-#include "utils.h"
+#ifdef COMPILING_KERNEL
+#	include "mm.h"
+#	include "utils.h"
+#	define malloc(size)	mm_allocate(size, MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL)
+#	define free(x)		mm_free(x)
+#else
+#	include <stdlib.h>
+#	include <string.h>
+#endif
 
 struct queue * queue_new(void)
 {
-	struct queue * retval = mm_allocate(sizeof(struct queue), MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
-	memclr(retval, sizeof(struct queue));
+	struct queue * retval = malloc(sizeof(struct queue));
+	memset(retval, 0, sizeof(struct queue));
 	return retval;
 }
 
@@ -23,16 +30,15 @@ void queue_free(struct queue * q, queue_data_free_func free_func)
 		if(free_func)
 			free_func(temp->data);
 		current = current->next;
-		mm_free(temp);
+		free(temp);
 	}
 
-	mm_free(q);
+	free(q);
 }
 
 void queue_add_front(struct queue * q, void * e)
 {
-	struct queue_node * new_node = mm_allocate(sizeof(struct queue_node),
-		MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	struct queue_node * new_node = malloc(sizeof(struct queue_node));
 	new_node->data = e;
 	new_node->next = q->first;
 	new_node->prev = 0;
@@ -48,8 +54,7 @@ void queue_add_front(struct queue * q, void * e)
 
 void queue_add_back(struct queue * q, void * e)
 {
-	struct queue_node * new_node = mm_allocate(sizeof(struct queue_node),
-		MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	struct queue_node * new_node = malloc(sizeof(struct queue_node));
 	new_node->data = e;
 	new_node->next = 0;
 	new_node->prev = q->last;
@@ -78,7 +83,7 @@ bool queue_remove_front(struct queue * q, void ** e)
 		--q->elements;
 
 		*e = node->data;
-		mm_free(node);
+		free(node);
 		return true;
 	}
 }
@@ -98,7 +103,7 @@ bool queue_remove_back(struct queue * q, void ** e)
 		--q->elements;
 
 		*e = node->data;
-		mm_free(node);
+		free(node);
 		return true;
 	}
 }
@@ -120,7 +125,7 @@ void * queue_remove_node(struct queue * q, struct queue_node * node)
 	if(q->last == node)
 		q->last = node->prev;
 
-	mm_free(node);
+	free(node);
 	return retval;
 
 }

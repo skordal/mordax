@@ -2,7 +2,7 @@
 # (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
 # Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
-.PHONY: all clean
+.PHONY: all clean link-common
 ifeq ($(TOPLEVEL),)
         $(error "Please run make from the toplevel directory.")
 endif
@@ -14,9 +14,13 @@ TARGET_ASFLAGS += $(CONFIG)
 TARGET_CFLAGS  += $(CONFIG)
 OBJECT_FILES   := $(ASSEMBLER_FILES:.S=.o) $(SOURCE_FILES:.c=.o)
 
-all: $(OBJECT_FILES)
+# Modules to import from the common library:
+COMMON_MODULES := queue rbtree stack
+COMMON_OBJECTS := $(foreach module,$(COMMON_MODULES),$(module).o)
+
+all: $(COMMON_OBJECTS) $(OBJECT_FILES)
 	$(TARGET_LD) $(TARGET_LDFLAGS) -T $(TARGET_LDSCRIPT) -Map mordax.map -o mordax.elf \
-		$(OBJECT_FILES)
+		$(OBJECT_FILES) $(COMMON_OBJECTS)
 	$(CP) $(TOPLEVEL)/$(KERNEL_INITPROC) init.bin
 	$(TARGET_OBJCOPY) -O binary -j .init -j .text -j .data \
 		mordax.elf mordax.bin
@@ -24,10 +28,23 @@ all: $(OBJECT_FILES)
 	$(DTC) -O dtb -o mordax.dtb $(DTS_FILE)
 	$(MKIMAGE) -f mordax.its mordax.itb
 
-clean:
+clean: clean-common
 	-$(RM) $(ASSEMBLER_FILES:.S=.o)
 	-$(RM) $(SOURCE_FILES:.c=.o)
 	-$(RM) mordax.elf mordax.bin mordax.bin.gz mordax.dtb mordax.itb
+
+link-common:
+	for module in $(COMMON_MODULES); do \
+		$(TEST) -L $${module}.h || $(LN) -s ../libraries/common/$${module}.h $${module}.h; \
+		$(TEST) -L $${module}.c || $(LN) -s ../libraries/common/$${module}.c $${module}.c; \
+	done
+
+clean-common:
+	-$(RM) $(foreach temp,$(COMMON_MODULES),$(temp).h)
+	-$(RM) $(foreach temp,$(COMMON_MODULES),$(temp).c)
+
+$(COMMON_OBJECTS): link-common
+	$(TARGET_CC) -c $(TARGET_CFLAGS) -o $@ $(@:.o=.c)
 
 %.o: %.S
 	$(TARGET_CC) -c $(TARGET_ASFLAGS) -o $@ $<
