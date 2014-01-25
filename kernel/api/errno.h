@@ -19,9 +19,11 @@
 #define ENOTSOCK	11
 #define E2BIG		12
 #define EDEADLK		13
+#define ESRCH		14
+#define EIDRM		15
 
 // Used for internal kernel errors:
-#define EINTERNAL	14
+#define EINTERNAL	15
 
 #endif
 

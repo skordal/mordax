@@ -67,7 +67,8 @@ struct process
 enum process_resource_type
 {
 	PROCESS_RESOURCE_SOCKET,
-	PROCESS_RESOURCE_SERVICE
+	PROCESS_RESOURCE_SERVICE,
+	PROCESS_RESOURCE_LOCK
 };
 
 /**

@@ -38,5 +38,9 @@ syscall_wrapper mordax_service_connect, #MORDAX_SYSCALL_SERVICE_CONNECT
 syscall_wrapper mordax_socket_send, #MORDAX_SYSCALL_SOCKET_SEND
 syscall_wrapper mordax_socket_receive, #MORDAX_SYSCALL_SOCKET_RECEIVE
 
+syscall_wrapper mordax_lock_create, #MORDAX_SYSCALL_LOCK_CREATE
+syscall_wrapper mordax_lock_aquire, #MORDAX_SYSCALL_LOCK_AQUIRE
+syscall_wrapper mordax_lock_release, #MORDAX_SYSCALL_LOCK_RELEASE
+
 syscall_wrapper mordax_resource_destroy, #MORDAX_SYSCALL_RESOURCE_DESTROY
 

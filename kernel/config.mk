@@ -23,6 +23,7 @@ SOURCE_FILES += \
 	dt.c \
 	irq.c \
 	kernel.c \
+	lock.c \
 	mm.c \
 	number_allocator.c \
 	queue.c \

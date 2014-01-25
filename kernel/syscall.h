@@ -119,6 +119,25 @@ void syscall_socket_send(struct thread_context * context);
 void syscall_socket_receive(struct thread_context * context);
 
 /**
+ * Creates a lock resource. Returns the resource identifier of the lock.
+ */
+void syscall_lock_create(struct thread_context * context);
+
+/**
+ * Attempts to aquire a lock. Takes the resource identifier of the lock as
+ * parameter. If the lock is locked by another thread, the calling thread
+ * is set as blocking until the lock can be aquired. On success 0 is returned,
+ * otherwise a negative error code is returned.
+ */
+void syscall_lock_aquire(struct thread_context * context);
+
+/**
+ * Releases a lock. Takes the resource identifier of the lock as parameter.
+ * Returns 0 on success and a negative error code on failure.
+ */
+void syscall_lock_release(struct thread_context * context);
+
+/**
  * Frees and destroys a resource. Takes the identifier of the resource
  * as argument.
  */

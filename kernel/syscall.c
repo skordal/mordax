@@ -4,6 +4,7 @@
 
 #include "context.h"
 #include "debug.h"
+#include "lock.h"
 #include "mm.h"
 #include "process.h"
 #include "scheduler.h"
@@ -71,6 +72,16 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 			break;
 		case MORDAX_SYSCALL_SOCKET_RECEIVE:
 			syscall_socket_receive(context);
+			break;
+
+		case MORDAX_SYSCALL_LOCK_CREATE:
+			syscall_lock_create(context);
+			break;
+		case MORDAX_SYSCALL_LOCK_AQUIRE:
+			syscall_lock_aquire(context);
+			break;
+		case MORDAX_SYSCALL_LOCK_RELEASE:
+			syscall_lock_release(context);
 			break;
 
 		case MORDAX_SYSCALL_RESOURCE_DESTROY:
@@ -548,6 +559,74 @@ void syscall_socket_receive(struct thread_context * context)
 		context_set_syscall_retval(context, (void *) retval);
 }
 
+void syscall_lock_create(struct thread_context * context)
+{
+	if((active_process->permissions & MORDAX_PROCESS_PERMISSION_LOCKS) == 0)
+	{
+		context_set_syscall_retval(context, (void *) -EPERM);
+		return;
+	}
+
+	struct lock * new_lock = lock_create();
+	if(new_lock == 0)
+	{
+		context_set_syscall_retval(context, (void *) -ENOMEM);
+		return;
+	}
+
+	mordax_resource_t retval = process_add_resource(active_process, PROCESS_RESOURCE_LOCK, new_lock);
+	context_set_syscall_retval(context, (void *) retval);
+}
+
+void syscall_lock_aquire(struct thread_context * context)
+{
+	if((active_process->permissions & MORDAX_PROCESS_PERMISSION_LOCKS) == 0)
+	{
+		context_set_syscall_retval(context, (void *) -EPERM);
+		return;
+	}
+
+	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
+
+	enum process_resource_type restype;
+	struct lock * l = process_get_resource(active_process, identifier, &restype);
+	if(restype != PROCESS_RESOURCE_LOCK)
+	{
+		context_set_syscall_retval(context, (void *) -EINVAL);
+		return;
+	}
+
+	bool blocking = false;
+	int retval = lock_aquire(l, active_thread, &blocking);
+	if(retval != 0)
+		context_set_syscall_retval(context, (void *) retval);
+	 else if(blocking)
+		scheduler_reschedule();
+	else
+		context_set_syscall_retval(context, (void *) retval);
+}
+
+void syscall_lock_release(struct thread_context * context)
+{
+	if((active_process->permissions & MORDAX_PROCESS_PERMISSION_LOCKS) == 0)
+	{
+		context_set_syscall_retval(context, (void *) -EPERM);
+		return;
+	}
+
+	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
+
+	enum process_resource_type restype;
+	struct lock * l = process_get_resource(active_process, identifier, &restype);
+	if(restype != PROCESS_RESOURCE_LOCK)
+	{
+		context_set_syscall_retval(context, (void *) -EINVAL);
+		return;
+	}
+
+	context_set_syscall_retval(context, (void *) lock_release(l, active_thread));
+}
+
 void syscall_resource_destroy(struct thread_context * context)
 {
 	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
@@ -567,6 +646,9 @@ void syscall_resource_destroy(struct thread_context * context)
 			break;
 		case PROCESS_RESOURCE_SOCKET:
 			socket_destroy(res);
+			break;
+		case PROCESS_RESOURCE_LOCK:
+			lock_destroy(res);
 			break;
 		default:
 			context_set_syscall_retval(context, (void *) -EINVAL);

@@ -4,6 +4,7 @@
 
 #include "debug.h"
 #include "kernel.h"
+#include "lock.h"
 #include "mm.h"
 #include "process.h"
 #include "rbtree.h"
@@ -196,6 +197,9 @@ static void free_resource(void * data)
 			break;
 		case PROCESS_RESOURCE_SERVICE:
 			service_destroy(res->resource_ptr);
+			break;
+		case PROCESS_RESOURCE_LOCK:
+			lock_destroy(res->resource_ptr);
 			break;
 		default:
 			break;

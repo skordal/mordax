@@ -110,6 +110,27 @@ void * mordax_memory_map_alloc(void * target, size_t * size,
 void mordax_memory_unmap(void * virtual, size_t size);
 
 /**
+ * Creates a lock resource.
+ * @return the identifier of the created lock resource.
+ */
+mordax_resource_t mordax_lock_create(void);
+
+/**
+ * Attempts to aquire a lock resource. If the lock is in use by another thread,
+ * the calling thread is set as blocking until it can aquire the lock.
+ * @param lock identifier of the lock to aquire.
+ * @return 0 if successful, otherwise a negative error code.
+ */
+int mordax_lock_aquire(mordax_resource_t lock);
+
+/**
+ * Releases a previously aquired lock.
+ * @param lock identifier of the lock to aquire.
+ * @return 0 if successful, otherwise a negative error code.
+ */
+int mordax_lock_release(mordax_resource_t lock);
+
+/**
  * Frees a resource.
  * @param identifier the resource identifier.
  */
