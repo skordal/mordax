@@ -3,8 +3,9 @@
 # Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 # List of libraries to build:
-LIBRARIES ?= \
-	mordax
+LIBRARIES := \
+	mordax \
+	libc
 
 .PHONY: all clean $(LIBRARIES)
 
@@ -24,4 +25,7 @@ clean:
 $(LIBRARIES):
 	@$(MAKE) -C $@ all install
 
+# Dependencies:
+libc: mordax
+pthread: libc
 
