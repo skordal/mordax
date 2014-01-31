@@ -53,8 +53,8 @@ int main(void)
 		.uid = 0,
 		.permissions = MORDAX_PROCESS_INHERIT_PERMISSIONS,
 		.stack_length = MORDAX_PROCESS_INHERIT_STACK_SIZE,
-		.source = (void *) 0x1000,
-		.source_length = (size_t) &image_size,
+		.text_source = (void *) 0x1000,
+		.text_source_length = (size_t) &image_size,
 		.text_length = ((size_t) &image_size + 0x1000 - 1) & -0x1000,
 	};
 	mordax_system(MORDAX_SYSTEM_DEBUG, "Creating new process instance...");
@@ -65,5 +65,14 @@ int main(void)
 		mordax_system(MORDAX_SYSTEM_DEBUG, "Process creation failed!");
 
 	return 0;
+}
+
+// Used by the compiler to clear the mordax_process_info structure:
+void * memset(void * restrict memory, char value, size_t length)
+{
+	char * s = memory;
+	for(int i = 0; i < length; ++i)
+		s[i] = value;
+	return memory;
 }
 

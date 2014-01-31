@@ -1,5 +1,5 @@
 // The Mordax Microkernel
-// (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
+// (c) Kristian Klomsten Skordal 2013 - 2014 <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include "debug.h"
@@ -72,37 +72,22 @@ struct process * process_create(struct mordax_process_info * procinfo)
 			mem.size, MORDAX_TYPE_STACK, MORDAX_PERM_RW_RW);
 	}
 
-	// Copy the initial stack contents:
-	if(procinfo->stack_init_length > 0)
+	if(procinfo->stack_source != 0)
 	{
 		if(active_thread != 0 && !mmu_access_permitted(active_thread->parent->translation_table,
-			procinfo->stack_init, procinfo->stack_init_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+			procinfo->stack_source, procinfo->stack_source_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
 		{
 			debug_printf("Error: cannot copy initial stack contents, access to memory is forbidden!\n");
 			goto _error_return;
-		} else {
-			if(active_thread == 0)
-			{
-				mmu_set_translation_table(retval->translation_table);
-				memcpy((void *) (PROCESS_DEFAULT_STACK_TOP - procinfo->stack_init_length),
-					procinfo->stack_init, procinfo->stack_init_length);
-			} else
-				memcpy_p((void *) (PROCESS_DEFAULT_STACK_TOP - procinfo->stack_init_length), retval,
-					procinfo->stack_init, active_thread->parent, procinfo->stack_init_length);
-		}
+		} else
+			memcpy_p((void *) (PROCESS_DEFAULT_STACK_TOP - procinfo->stack_source_length), retval,
+				procinfo->stack_source, active_thread == 0 ? 0 : active_thread->parent, procinfo->stack_source_length);
 	}
 
 	// Create the process image:
-	size_t image_size = (procinfo->source_length + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE;
 	int text_pages = procinfo->text_length / CONFIG_PAGE_SIZE;
 	int rodata_pages = procinfo->rodata_length / CONFIG_PAGE_SIZE;
 	int data_pages = procinfo->data_length / CONFIG_PAGE_SIZE;
-
-	if(text_pages + rodata_pages + data_pages < image_size / CONFIG_PAGE_SIZE)
-	{
-		debug_printf("Error: mismatch between section sizes and image size\n");
-		goto _error_return;
-	}
 
 	// Allocate process memory:
 	for(int i = 0; i < text_pages + rodata_pages + data_pages; ++i)
@@ -124,42 +109,53 @@ struct process * process_create(struct mordax_process_info * procinfo)
 		{
 			type = MORDAX_TYPE_DATA;
 			permissions = MORDAX_PERM_RW_RW;
-			debug_printf("Mapping data memory:\n\t");
+			debug_printf("Mapping data memory: ");
 		} else if(i + 1 >= rodata_boundary)
 		{
 			type = MORDAX_TYPE_RODATA;
 			permissions = MORDAX_PERM_RW_RO;
-			debug_printf("Mapping rodata memory:\n\t");
+			debug_printf("Mapping rodata memory: ");
 		} else {
 			type = MORDAX_TYPE_CODE;
 	//		permissions = MORDAX_PERM_RW_RO;
 			permissions = MORDAX_PERM_RW_RW;
-			debug_printf("Mapping code memory:\n\t");
+			debug_printf("Mapping code memory: ");
 		}
 
-		debug_printf("Mapping %x to %x\n", mem.base, (i + 1) * CONFIG_PAGE_SIZE);
+		debug_printf("%x to %x\n", mem.base, (i + 1) * CONFIG_PAGE_SIZE);
 		mmu_map(retval->translation_table, mem.base, (void *) ((i + 1) * CONFIG_PAGE_SIZE),
 			mem.size, type, permissions);
 	}
 
-	// Copy the process image:
-	if(procinfo->source_length > 0)
+	// Copy .text data:
+	if(active_thread != 0 && procinfo->text_source != 0 && !mmu_access_permitted(active_thread->parent->translation_table,
+		procinfo->text_source, procinfo->text_source_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
 	{
-		if(active_thread != 0 && !mmu_access_permitted(active_thread->parent->translation_table,
-			procinfo->source, procinfo->source_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
-		{
-			debug_printf("Error: cannot copy process image, access to memory is forbidden!\n");
-			goto _error_return;
-		} else {
-			if(active_thread == 0)
-			{
-				mmu_set_translation_table(retval->translation_table);
-				memcpy((void *) 0x1000, procinfo->source, procinfo->source_length);
-			} else
-				memcpy_p((void *) 0x1000, retval, procinfo->source,
-					active_thread->parent, procinfo->source_length);
-		}
-	}
+		debug_printf("Error: cannot copy .text data, access to source memory is forbidden!\n");
+		goto _error_return;
+	} else if(procinfo->text_source != 0)
+		memcpy_p((void *) 0x1000, retval, procinfo->text_source, active_thread == 0 ? 0 : active_thread->parent,
+			procinfo->text_source_length);
+
+	// Copy .rodata data:
+	if(active_thread != 0 && procinfo->rodata_source != 0 && !mmu_access_permitted(active_thread->parent->translation_table,
+		procinfo->rodata_source, procinfo->rodata_source_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		debug_printf("Error: cannot copy .data data, access to source memory is forbidden!\n");
+		goto _error_return;
+	} else if(procinfo->rodata_source != 0)
+		memcpy_p((void *) ((1 + text_pages) * CONFIG_PAGE_SIZE), retval,
+			procinfo->rodata_source, active_thread == 0 ? 0 : active_thread->parent, procinfo->rodata_source_length);
+
+	// Copy .data data:
+	if(active_thread != 0 && procinfo->data_source != 0 && !mmu_access_permitted(active_thread->parent->translation_table,
+		procinfo->data_source, procinfo->data_source_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		debug_printf("Error: cannot copy .data data, access to source memory is forbidden!\n");
+		goto _error_return;
+	} else if(procinfo->data_source != 0)
+		memcpy_p((void *) ((1 + text_pages + rodata_pages) * CONFIG_PAGE_SIZE), retval, procinfo->data_source,
+			active_thread == 0 ? 0 : active_thread->parent, procinfo->data_source_length);
 
 	return retval;
 

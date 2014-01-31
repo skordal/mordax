@@ -1,5 +1,5 @@
 // The Mordax Microkernel
-// (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
+// (c) Kristian Klomsten Skordal 2013 - 2014 <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #ifndef MORDAX_API_PROCESS_H
@@ -46,16 +46,12 @@ struct mordax_process_info
 	// Details for the initial thread of the new process:
 	void * entry_point;		//< Entry point for the application.
 
-	// Initial stack contents (such as process arguments, etc.):
-	void * stack_init;		//< Pointer to where to copy the initial stack data from.
-	size_t stack_init_length;	//< Length of the initial stack data.
-
-	// Initial process image data:
-	void * source;			//< Data to copy into the process image.
-	size_t source_length;		//< Length of the source data.
-
 	// Section sizes:
 	size_t text_length, rodata_length, data_length, stack_length; //< Section sizes.
+
+	// Initial process image data:
+	void * text_source, * rodata_source, * data_source, * stack_source;
+	size_t text_source_length, rodata_source_length, data_source_length, stack_source_length;
 };
 
 #endif

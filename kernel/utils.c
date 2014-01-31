@@ -1,5 +1,5 @@
 // The Mordax Microkernel
-// (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
+// (c) Kristian Klomsten Skordal 2013 - 2014 <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include "debug.h"
@@ -95,7 +95,7 @@ void memcpy_p(void * dest_addr, struct process * dest_proc,
 {
 	struct mmu_translation_table * current_tt = mmu_get_translation_table();
 
-	if(dest_proc == src_proc)
+	if(dest_proc == src_proc || src_proc == 0)
 	{
 		memcpy(dest_addr, src_addr, length);
 		return;

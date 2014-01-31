@@ -76,8 +76,8 @@ bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_sta
 		.entry_point = (void *) 0x1000,
 		.stack_length = PROCESS_DEFAULT_STACK_SIZE,
 		.permissions = MORDAX_PROCESS_ALL_PERMISSIONS,
-		.source = initproc_image,
-		.source_length = initproc_size,
+		.text_source = initproc_image,
+		.text_source_length = initproc_size,
 		.text_length = (initproc_size + CONFIG_PAGE_SIZE - 1) & -CONFIG_PAGE_SIZE,
 	};
 	struct process * initial_process = process_create(&initproc_info);
