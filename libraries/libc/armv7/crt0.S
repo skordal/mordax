@@ -26,7 +26,7 @@ _start:
 	ldrne r0, [sp, #-8] @ Load argc
 	ldrne r1, [sp, #-4] @ Load argv
 	moveq r0, #0
-	moveq r0, r1
+	moveq r1, #0
 
 	@ Start main:
 	bl main
