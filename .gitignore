@@ -1,4 +1,4 @@
-# Ignore built binary files:
+# Ignore built files:
 *.a
 *.o
 *.itb
@@ -6,6 +6,10 @@
 *.elf
 *.bin
 *.bin.gz
+*.map
+
+# Ignore the target filesystem directory:
+target/
 
 # Ignore vim temporary files:
 *.swo
