@@ -4,7 +4,8 @@
 
 # List of libraries to build:
 LIBRARIES ?= \
-	mordax
+	mordax \
+	libc
 
 .PHONY: all clean $(LIBRARIES)
 
@@ -24,4 +25,6 @@ clean:
 $(LIBRARIES):
 	@$(MAKE) -C $@ all install
 
+# Library dependencies:
+libc: mordax
 
