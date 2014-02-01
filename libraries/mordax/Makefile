@@ -37,7 +37,7 @@ install: all
 	test -d $(TARGET_INCLUDEDIR)/mordax || mkdir -p $(TARGET_INCLUDEDIR)/mordax
 	for file in $$(ls -1 mordax/); do \
 		if [ ! -f $(TARGET_INCLUDEDIR)/mordax/$$file ]; then \
-			$(CP) -v mordax/$$file $(TARGET_INCLUDEDIR)/mordax/$$file; \
+			$(CP) mordax/$$file $(TARGET_INCLUDEDIR)/mordax/$$file; \
 		fi; \
 	done
 
