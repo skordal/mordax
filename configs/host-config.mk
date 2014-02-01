@@ -8,7 +8,7 @@
 export HOST_CC ?= $(CC)
 
 # Build flags:
-export HOST_CFLAGS  ?= $(CFLAGS) -O2 -Wall -g
+export HOST_CFLAGS  ?= $(CFLAGS) -O2 -Wall -g -std=gnu11
 export HOST_LDFLAGS ?= $(LDFLAGS)
 
 # Target independent build tools:
