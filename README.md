@@ -10,9 +10,10 @@ The following tools are currently required to build Mordax:
 * An `arm-eabi-none` toolchain.
 * The device tree compiler, `dtc`.
 * `mkimage` from the U-Boot project.
-* Various Unix utilities which you probably have anyway (unless you are running Windows). Try to build, and you will find out what you are missing.
+* `libelf` and a host compiler toolchain for building the `mkinitproc` tool.
+* Various Unix utilities which you probably have anyway (unless you are running Windows). Try to build and you will find out what you are missing.
 
-When you have the required tools, run `make` from the toplevel folder. You have to specify a target using the `TARGET` makefile variable on the command line. The supported targets are `armv7-beagleboard` for the Beagleboard-xM and `armv7-am335x_evm` for Texas Instruments' AM335x Evaluation Board.
+When you have the required tools, run `make` from the toplevel folder. You have to specify a target using the `TARGET` makefile variable on the command line. The supported targets are `armv7-beagleboard` for the Beagleboard-xM and `armv7-am335x_evm` for Texas Instruments' AM335x Evaluation Board. At the moment, the AM335x version does not boot correctly, likely due to an issue on the UART code (unverified).
 
 Beware, that until there is a stable release, there may be issues in the code causing the build to fail.
 
@@ -32,4 +33,5 @@ The Libraries
 -------------
 
 * libmordax: a library providing wrapper functions for all supported system calls.
+* libc: a standard C library implementation for Mordax applications.
 
