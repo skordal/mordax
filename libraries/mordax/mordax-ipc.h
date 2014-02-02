@@ -50,5 +50,12 @@ int mordax_socket_send(mordax_resource_t socket, const void * buffer, size_t len
  */
 int mordax_socket_receive(mordax_resource_t socket, void * buffer, size_t length);
 
+/**
+ * Waits for a message on a socket.
+ * @param socket the socket to wait on.
+ * @return the length of the message waiting on the socket or a negative error number.
+ */
+size_t mordax_socket_wait(mordax_resource_t socket);
+
 #endif
 

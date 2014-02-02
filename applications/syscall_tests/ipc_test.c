@@ -21,14 +21,24 @@ void test_thread(void)
 	mordax_system(MORDAX_SYSTEM_DEBUG, "Sending test message...");
 	mordax_socket_send(socket, "TEST", 4);
 
+	mordax_system(MORDAX_SYSTEM_DEBUG, "Checking test reply length...");
+	size_t message_length = mordax_socket_wait(socket);
+	if(message_length != 4)
+	{
+		mordax_system(MORDAX_SYSTEM_DEBUG, "***ERROR*** Incorrect message length!");
+		goto _test_thread_return;
+	}
+
 	mordax_system(MORDAX_SYSTEM_DEBUG, "Receiving test reply...");
 	char reply_buffer[4];
+
 	mordax_socket_receive(socket, reply_buffer, 4);
 	if(reply_buffer[0] == 'T' && reply_buffer[1] == 'S' && reply_buffer[2] == 'E' && reply_buffer[3] == 'T')
 		mordax_system(MORDAX_SYSTEM_DEBUG, "Reply is correct");
 	else
 		mordax_system(MORDAX_SYSTEM_DEBUG, "Incorrect reply received");
 
+_test_thread_return:
 	mordax_system(MORDAX_SYSTEM_DEBUG, "Closing socket and exiting client thread...");
 	mordax_resource_destroy(socket);
 	mordax_thread_exit(0);

@@ -36,6 +36,12 @@ void socket_destroy(struct socket * sock)
 		scheduler_move_thread_to_running(sock->blocking_sender);
 	}
 
+	if(sock->blocking_waiter)
+	{
+		context_set_syscall_retval(sock->blocking_waiter->context, (void *) -ENOTCONN);
+		scheduler_move_thread_to_running(sock->blocking_waiter);
+	}
+
 	// Disconnect from the endpoint:
 	if(sock->endpoint != 0)
 		sock->endpoint->endpoint = 0;
@@ -49,6 +55,24 @@ bool socket_connect(struct socket * a, struct socket * b)
 	return true;
 }
 
+int socket_wait(struct socket * sock, struct thread * waiting_thread, bool * block)
+{
+	*block = false;
+
+	if(sock->endpoint == 0)
+		return -ENOTCONN;
+	if(sock->endpoint->blocking_receiver != 0)
+		return -EBUSY;
+
+	if(sock->endpoint->blocking_sender != 0)
+		return sock->endpoint->blocking_details.length;
+	else {
+		sock->blocking_waiter = waiting_thread;
+		*block = true;
+		return 0;
+	}
+}
+
 int socket_receive(struct socket * sock, struct thread * receiving_thread,
 	void * buffer, size_t length, bool * block)
 {
@@ -58,8 +82,8 @@ int socket_receive(struct socket * sock, struct thread * receiving_thread,
 		return -ENOTCONN;
 	if(length > CONFIG_IPC_BUFFER_LENGTH)
 		return -E2BIG;
-	if(sock->endpoint->blocking_receiver != 0)
-		return -EDEADLK;
+	if(sock->endpoint->blocking_receiver != 0 || sock->endpoint->blocking_waiter)
+		return -EBUSY;
 
 	if(sock->endpoint->blocking_sender != 0)
 	{
@@ -89,7 +113,7 @@ int socket_send(struct socket * sock, struct thread * sending_thread,
 	if(length > CONFIG_IPC_BUFFER_LENGTH)
 		return -E2BIG;
 	if(sock->endpoint->blocking_sender != 0)
-		return -EDEADLK;
+		return -EBUSY;
 
 	if(sock->endpoint->blocking_receiver != 0)
 	{
@@ -105,6 +129,15 @@ int socket_send(struct socket * sock, struct thread * sending_thread,
 		sock->blocking_details.buffer = (void *) buffer;
 		sock->blocking_details.length = length;
 		*block = true;
+
+		// If a thread is waiting for a message, release it with the size of the message:
+		if(sock->endpoint->blocking_waiter != 0)
+		{
+			scheduler_move_thread_to_running(sock->endpoint->blocking_waiter);
+			context_set_syscall_retval(sock->endpoint->blocking_waiter->context, (void *) length);
+			sock->endpoint->blocking_waiter = 0;
+		}
+
 		return 0;
 	}
 }

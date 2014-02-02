@@ -119,6 +119,13 @@ void syscall_socket_send(struct thread_context * context);
 void syscall_socket_receive(struct thread_context * context);
 
 /**
+ * Waits for a message on a socket and returns its size. Takes one argument,
+ * which is the identifier of the socket. Returns the size of the waiting
+ * message or blocks until a message is available and then returns the size.
+ */
+void syscall_socket_wait(struct thread_context * context);
+
+/**
  * Creates a lock resource. Returns the resource identifier of the lock.
  */
 void syscall_lock_create(struct thread_context * context);

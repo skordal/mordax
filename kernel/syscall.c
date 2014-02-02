@@ -73,6 +73,9 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 		case MORDAX_SYSCALL_SOCKET_RECEIVE:
 			syscall_socket_receive(context);
 			break;
+		case MORDAX_SYSCALL_SOCKET_WAIT:
+			syscall_socket_wait(context);
+			break;
 
 		case MORDAX_SYSCALL_LOCK_CREATE:
 			syscall_lock_create(context);
@@ -551,6 +554,40 @@ void syscall_socket_receive(struct thread_context * context)
 	bool block = false;
 	int retval = socket_receive(receive_socket, active_thread, buffer, buffer_length, &block);
 
+	if(block)
+	{
+		scheduler_move_thread_to_blocking(active_thread);
+		scheduler_reschedule();
+	} else
+		context_set_syscall_retval(context, (void *) retval);
+}
+
+void syscall_socket_wait(struct thread_context * context)
+{
+	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
+
+	debug_printf("PID %d, TID %d waiting for a message on socket %d\n", active_process->pid,
+		active_thread->tid, identifier);
+
+	enum process_resource_type restype;
+	struct socket * wait_socket = process_get_resource(active_process, identifier, &restype);
+	if(restype != PROCESS_RESOURCE_SOCKET)
+	{
+		debug_printf("Error: cannot wait on resource %d, resource is not a socket\n",
+			identifier);
+		context_set_syscall_retval(context, (void *) -ENOTSOCK);
+		return;
+	}
+
+	if(wait_socket->endpoint == 0)
+	{
+		debug_printf("Error: cannot wait on socket, socket is not connected\n");
+		context_set_syscall_retval(context, (void *) -ENOTCONN);
+		return;
+	}
+
+	bool block = false;
+	int retval = socket_wait(wait_socket, active_thread, &block);
 	if(block)
 	{
 		scheduler_move_thread_to_blocking(active_thread);

@@ -29,6 +29,7 @@ struct socket
 
 	struct thread * blocking_receiver;
 	struct thread * blocking_sender;
+	struct thread * blocking_waiter;
 
 	struct {
 		void * buffer;
@@ -56,13 +57,17 @@ void socket_destroy(struct socket * sock);
 bool socket_connect(struct socket * a, struct socket * b);
 
 /**
- * Polls a socket to check if it has any available data to receive.
- * @param sock the socket to poll.
- * @param msg_length pointer to a variable in which to store the length of the
- *                   next message in the message queue.
- * @return `true` if data is available, `false` if not.
+ * Waits for a message to arrive and returns the size of it.
+ * This does not remove the message from the message queue and socket_receive
+ * must be called to receive the message.
+ * @param sock the socket to wait on.
+ * @param waiting_thread the thread doing the waiting.
+ * @param block a pointer to a variable that is set to `true` if the sending thread
+ *              should be moved to the blocking queue.
+ * @return length of the received message or < 0 on error.
  */
-bool socket_poll(struct socket * sock, size_t * msg_length);
+int socket_wait(struct socket * sock, struct thread * waiting_thread,
+	bool * block);
 
 /**
  * Receives a message from a socket's endpoint. If the specified length does
