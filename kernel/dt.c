@@ -123,7 +123,7 @@ const char * dt_get_string_property(struct dt_node * node, const char * name)
 	return 0;
 }
 
-bool dt_get_array32_property(struct dt_node * node, const char * name, uint32_t out[], size_t length)
+bool dt_get_array32_property(struct dt_node * node, const char * name, uint32_t * out, size_t length)
 {
 	for(struct dt_property * current = node->properties; current != 0; current = current->next)
 	{

@@ -98,7 +98,7 @@ const char * dt_get_string_property(struct dt_node * node, const char * name);
  * @param length length of the array to return.
  * @return `true` if successful, `false` otherwise.
  */
-bool dt_get_array32_property(struct dt_node * node, const char * name, uint32_t out[], size_t length);
+bool dt_get_array32_property(struct dt_node * node, const char * name, uint32_t * out, size_t length);
 
 /**
  * Gets a phandle property from a device tree node.
