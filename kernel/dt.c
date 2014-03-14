@@ -60,6 +60,8 @@ struct dt_node * dt_get_node_by_path(struct dt * dt, const char * path)
 {
 	if(path[0] != '/' || dt == 0)
 		return 0;	
+	else if(path[0] == '/' && path[1] == 0)
+		return dt->root;
 
 	char * nextpath = mm_allocate(strlen(path + 1) + 1, MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
 	char * free_nextpath = nextpath;
