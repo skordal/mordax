@@ -8,6 +8,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifndef NULL
+#define NULL ((void *) 0)
+#endif
+
 /** Object size type. */
 typedef uint32_t size_t;
 
