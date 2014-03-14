@@ -145,6 +145,50 @@ void syscall_lock_aquire(struct thread_context * context);
 void syscall_lock_release(struct thread_context * context);
 
 /**
+ * Gets a device tree node by its path. Takes two arguments, the path of the
+ * device tree node and the length of the path. Returns a resource identifier
+ * representing the device tree node on success or a negative error code.
+ */
+void syscall_dt_get_node_by_path(struct thread_context * context);
+
+/**
+ * Gets a device tree node by its phandle. Takes the phandle of the device
+ * tree node as argument. Returns a resource identifier on success or a negative
+ * error code on error.
+ */
+void syscall_dt_get_node_by_phandle(struct thread_context * context);
+
+/**
+ * Gets an array of 32-bits integers from a device tree node attribute.
+ * Takes four arguments; the resource handle of the device tree node,
+ * a pointer to a mordax_dt_string structure containing the name,
+ * a pointer to an array of 32-bits integers to return the value in, and
+ * the length of the array to return. On success 0 is returned, otherwise
+ * a negative error value is returned.
+ */
+void syscall_dt_get_property_array32(struct thread_context * context);
+
+/**
+ * Gets a string property from a device tree node. Takes three
+ * arguments; the resource handle of the device tree node, the name of
+ * the property in the form of a pointer to a mordax_dt_string structure
+ * and a pointer to a mordax_dt_string structure in which the string result
+ * is returned. On success 0 is returned, otherwise a negative error value
+ * is returned.
+ */
+void syscall_dt_get_property_string(struct thread_context * context);
+
+/**
+ * Gets a phandle property from a device tree node. Takes three arguments,
+ * the resource handle of the device tree node, a pointer to a
+ * mordax_dt_string structure with the name of the property and a pointer to
+ * where the phandle result should be stored. On success 0 is returned, otherwise
+ * a negative error code is returned.
+ */
+void syscall_dt_get_property_phandle(struct thread_context * context);
+
+
+/**
  * Frees and destroys a resource. Takes the identifier of the resource
  * as argument.
  */

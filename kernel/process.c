@@ -197,6 +197,10 @@ static void free_resource(void * data)
 		case PROCESS_RESOURCE_LOCK:
 			lock_destroy(res->resource_ptr);
 			break;
+		case PROCESS_RESOURCE_DT_NODE:
+			// DT nodes are a direct part of the kernel DT and
+			// cannot be freed.
+			break;
 		default:
 			break;
 	}

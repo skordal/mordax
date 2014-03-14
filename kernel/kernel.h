@@ -5,7 +5,10 @@
 #ifndef MORDAX_KERNEL_H
 #define MORDAX_KERNEL_H
 
+#include "dt.h"
 #include "api/types.h"
+
+extern struct dt * kernel_dt;
 
 /**
  * Initializes the kernel and starts the initial process.

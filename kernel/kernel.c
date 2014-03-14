@@ -3,7 +3,6 @@
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include "debug.h"
-#include "dt.h"
 #include "irq.h"
 #include "kernel.h"
 #include "mm.h"
@@ -16,7 +15,7 @@
 #include "drivers/timer/timer.h"
 
 // Kernel device tree:
-static struct dt * kernel_dt;
+struct dt * kernel_dt;
 
 // Functions exported from target specific code:
 extern void interrupts_initialize(void);

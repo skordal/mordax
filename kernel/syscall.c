@@ -4,6 +4,8 @@
 
 #include "context.h"
 #include "debug.h"
+#include "dt.h"
+#include "kernel.h"
 #include "lock.h"
 #include "mm.h"
 #include "process.h"
@@ -13,6 +15,7 @@
 #include "thread.h"
 #include "utils.h"
 
+#include "api/dt.h"
 #include "api/errno.h"
 #include "api/syscalls.h"
 #include "api/system.h"
@@ -85,6 +88,22 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 			break;
 		case MORDAX_SYSCALL_LOCK_RELEASE:
 			syscall_lock_release(context);
+			break;
+
+		case MORDAX_SYSCALL_DT_GET_NODE_BY_PATH:
+			syscall_dt_get_node_by_path(context);
+			break;
+		case MORDAX_SYSCALL_DT_GET_NODE_BY_PHANDLE:
+			syscall_dt_get_node_by_phandle(context);
+			break;
+		case MORDAX_SYSCALL_DT_GET_PROPERTY_ARRAY32:
+			syscall_dt_get_property_array32(context);
+			break;
+		case MORDAX_SYSCALL_DT_GET_PROPERTY_STRING:
+			syscall_dt_get_property_string(context);
+			break;
+		case MORDAX_SYSCALL_DT_GET_PROPERTY_PHANDLE:
+			syscall_dt_get_property_phandle(context);
 			break;
 
 		case MORDAX_SYSCALL_RESOURCE_DESTROY:
@@ -662,6 +681,187 @@ void syscall_lock_release(struct thread_context * context)
 	}
 
 	context_set_syscall_retval(context, (void *) lock_release(l, active_thread));
+}
+
+void syscall_dt_get_node_by_path(struct thread_context * context)
+{
+	char * path = context_get_syscall_argument(context, 0);
+	size_t path_length = (size_t) context_get_syscall_argument(context, 1);
+
+	if(!mmu_access_permitted(0, path, path_length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	char * path_string = mm_allocate(path_length + 1, MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	memcpy(path_string, path, path_length);
+	path_string[path_length] = 0;
+
+	struct dt_node * node = dt_get_node_by_path(kernel_dt, path_string);
+	if(node == 0)
+		context_set_syscall_retval(context, (void *) -ENOENT);
+	else {
+		mordax_resource_t retval = process_add_resource(active_process, PROCESS_RESOURCE_DT_NODE,
+			node);
+		context_set_syscall_retval(context, (void *) retval);
+	}
+
+	mm_free(path_string);
+}
+
+void syscall_dt_get_node_by_phandle(struct thread_context * context)
+{
+	dt_phandle phandle = (dt_phandle) context_get_syscall_argument(context, 0);
+
+	struct dt_node * node = dt_get_node_by_phandle(kernel_dt, phandle);
+	if(node == 0)
+		context_set_syscall_retval(context, (void *) -ENOENT);
+	else {
+		mordax_resource_t retval = process_add_resource(active_process, PROCESS_RESOURCE_DT_NODE,
+			node);
+		context_set_syscall_retval(context, (void *) retval);
+	}
+}
+
+void syscall_dt_get_property_array32(struct thread_context * context)
+{
+	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
+	struct mordax_dt_string * name = context_get_syscall_argument(context, 1);
+	uint32_t * out_array = context_get_syscall_argument(context, 2);
+	size_t out_length = (size_t) context_get_syscall_argument(context, 3);
+
+	// Check memory accesses:
+	if(!mmu_access_permitted(0, out_array, out_length * sizeof(uint32_t),
+		MMU_ACCESS_WRITE|MMU_ACCESS_USER))
+	{
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	if(!mmu_access_permitted(0, name, sizeof(struct mordax_dt_string), MMU_ACCESS_READ|MMU_ACCESS_USER)
+		|| !mmu_access_permitted(0, name->string, name->length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	// Get the device tree node:
+	enum process_resource_type restype;
+	struct dt_node * node = process_get_resource(active_process, identifier, &restype);
+	if(restype != PROCESS_RESOURCE_DT_NODE || node == 0)
+	{
+		context_set_syscall_retval(context, (void *) -EINVAL);
+		return;
+	}
+
+	// Copy the property name:
+	char * real_name = mm_allocate(name->length + 1, MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	memcpy(real_name, name->string, name->length);
+	real_name[name->length] = 0;
+
+	if(!dt_get_array32_property(node, real_name, out_array, out_length))
+		context_set_syscall_retval(context, (void *) -ENOENT);
+	else
+		context_set_syscall_retval(context, 0);
+
+	mm_free(real_name);
+}
+
+void syscall_dt_get_property_string(struct thread_context * context)
+{
+	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
+	struct mordax_dt_string * name = context_get_syscall_argument(context, 1);
+	struct mordax_dt_string * ret = context_get_syscall_argument(context, 2);
+
+	// Check access permissions for the name structure and the name string:
+	if(!mmu_access_permitted(0, name, sizeof(struct mordax_dt_string), MMU_ACCESS_READ|MMU_ACCESS_USER)
+		|| !mmu_access_permitted(0, name->string, name->length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	// Check access permissions for the return string:
+	if(!mmu_access_permitted(0, ret, sizeof(struct mordax_dt_string), MMU_ACCESS_READ|MMU_ACCESS_WRITE|MMU_ACCESS_USER)
+		|| !mmu_access_permitted(0, ret->string, ret->length, MMU_ACCESS_WRITE|MMU_ACCESS_USER))
+	{
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	size_t maxlen = ret->length;
+
+	// Get the device tree node:
+	enum process_resource_type restype;
+	struct dt_node * node = process_get_resource(active_process, identifier, &restype);
+	if(restype != PROCESS_RESOURCE_DT_NODE || node == 0)
+	{
+		context_set_syscall_retval(context, (void *) -EINVAL);
+		return;
+	}
+
+	// Copy the property name:
+	char * real_name = mm_allocate(name->length + 1, MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	memcpy(real_name, name->string, name->length);
+	real_name[name->length] = 0;
+
+	const char * stringval = dt_get_string_property(node, real_name);
+	if(stringval == 0)
+	{
+		context_set_syscall_retval(context, (void *) -ENOENT);
+	} else {
+		size_t proplength = strlen(stringval);
+		if(proplength >= maxlen)
+		{
+			memcpy(ret->string, stringval, maxlen - 1);
+			ret->string[maxlen] = 0;
+			ret->length = maxlen - 1;
+		} else {
+			memcpy(ret->string, stringval, strlen(stringval));
+			ret->string[strlen(stringval)] = 0;
+			ret->length = strlen(stringval);
+		}
+		context_set_syscall_retval(context, 0);
+	}
+
+	mm_free(real_name);
+}
+
+void syscall_dt_get_property_phandle(struct thread_context * context)
+{
+	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
+	struct mordax_dt_string * name = context_get_syscall_argument(context, 1);
+	unsigned int * ret = context_get_syscall_argument(context, 2);
+
+	if(!mmu_access_permitted(0, name, sizeof(struct mordax_dt_string), MMU_ACCESS_READ|MMU_ACCESS_USER)
+		|| !mmu_access_permitted(0, name->string, name->length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	if(!mmu_access_permitted(0, ret, sizeof(unsigned int), MMU_ACCESS_WRITE|MMU_ACCESS_USER))
+	{
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	enum process_resource_type restype;
+	struct dt_node * node = process_get_resource(active_process, identifier, &restype);
+	if(restype != PROCESS_RESOURCE_DT_NODE || node == 0)
+	{
+		context_set_syscall_retval(context, (void *) -EINVAL);
+		return;
+	}
+
+	char * real_name = mm_allocate(name->length + 1, MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	memcpy(real_name, name->string, name->length);
+	real_name[name->length] = 0;
+
+	*ret = dt_get_phandle_property(node, real_name);
+	context_set_syscall_retval(context, 0);
+	mm_free(real_name);
 }
 
 void syscall_resource_destroy(struct thread_context * context)
