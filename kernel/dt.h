@@ -75,6 +75,19 @@ struct dt_node * dt_get_node_by_phandle(struct dt * dt, dt_phandle phandle);
 struct dt_node * dt_get_node_by_alias(struct dt * dt, const char * alias);
 
 /**
+ * Gets a device tree node by its `compatible` value.
+ * @param dt the device tree to search in.
+ * @param compatible value of the compatible string. If there are multiple
+ *                   values listed in the device tree, these will be searched
+ *                   separately.
+ * @param index index into the list of search results of the node to retrieve.
+ * @return the device tree node or 0 if no node was found or no node was found
+ *         at the specified index
+ */
+struct dt_node * dt_get_node_by_compatible(struct dt * dt, const char * compatible,
+	int index);
+
+/**
  * Gets the specified subnode of a device tree node.
  * @param node the node to search the children of.
  * @param name name of the node to find.

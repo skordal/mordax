@@ -24,6 +24,14 @@ mordax_resource_t mordax_dt_get_node_by_path(const char * path, size_t path_leng
 mordax_resource_t mordax_dt_get_node_by_phandle(unsigned int phandle);
 
 /**
+ * Looks up a device tree node by its compatible value.
+ * @param compatible value of the compatible property to look for.
+ * @param index index into an array of returned results to retrieve.
+ * @return a resource identifier for the device tree node or a negative error code.
+ */
+mordax_resource_t mordax_dt_get_node_by_compatible(struct mordax_dt_string * compatible, int index);
+
+/**
  * Gets an array of 32-bit values from a device tree node.
  * @param identifier resource identifier for the node.
  * @param name name of the property to read data from.

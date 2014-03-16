@@ -159,6 +159,14 @@ void syscall_dt_get_node_by_path(struct thread_context * context);
 void syscall_dt_get_node_by_phandle(struct thread_context * context);
 
 /**
+ * Gets a device tree node by its compatible property. Takes two parameters,
+ * a `mordax_dt_string` structure with the compatible value and an integer
+ * specifying the index into the array of possible return values to retrieve.
+ * Returns a resource identifier on success or a negative error code on error.
+ */
+void syscall_dt_get_node_by_compatible(struct thread_context * context);
+
+/**
  * Gets an array of 32-bits integers from a device tree node attribute.
  * Takes four arguments; the resource handle of the device tree node,
  * a pointer to a mordax_dt_string structure containing the name,

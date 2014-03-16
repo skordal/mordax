@@ -96,6 +96,9 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 		case MORDAX_SYSCALL_DT_GET_NODE_BY_PHANDLE:
 			syscall_dt_get_node_by_phandle(context);
 			break;
+		case MORDAX_SYSCALL_DT_GET_NODE_BY_COMPATIBLE:
+			syscall_dt_get_node_by_compatible(context);
+			break;
 		case MORDAX_SYSCALL_DT_GET_PROPERTY_ARRAY32:
 			syscall_dt_get_property_array32(context);
 			break;
@@ -722,6 +725,34 @@ void syscall_dt_get_node_by_phandle(struct thread_context * context)
 			node);
 		context_set_syscall_retval(context, (void *) retval);
 	}
+}
+
+void syscall_dt_get_node_by_compatible(struct thread_context * context)
+{
+	struct mordax_dt_string * compatible = context_get_syscall_argument(context, 0);
+	int index = (int) context_get_syscall_argument(context, 1);
+
+	if(!mmu_access_permitted(0, compatible, sizeof(struct mordax_dt_string), MMU_ACCESS_READ|MMU_ACCESS_USER)
+		|| !mmu_access_permitted(0, compatible->string, compatible->length, MMU_ACCESS_READ|MMU_ACCESS_USER))
+	{
+		context_set_syscall_retval(context, (void *) -EFAULT);
+		return;
+	}
+
+	char * compatible_string = mm_allocate(compatible->length + 1, MM_DEFAULT_ALIGNMENT, MM_MEM_NORMAL);
+	memcpy(compatible_string, compatible->string, compatible->length);
+	compatible_string[compatible->length] = 0;
+
+	struct dt_node * node = dt_get_node_by_compatible(kernel_dt, compatible_string, index);
+	if(node == 0)
+		context_set_syscall_retval(context, (void *) -ENOENT);
+	else {
+		mordax_resource_t retval = process_add_resource(active_process, PROCESS_RESOURCE_DT_NODE,
+			node);
+		context_set_syscall_retval(context, (void *) retval);
+	}
+
+	mm_free(compatible_string);
 }
 
 void syscall_dt_get_property_array32(struct thread_context * context)

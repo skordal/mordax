@@ -25,6 +25,10 @@ struct fdt
 	be32 version;
 };
 
+// Function for recursively searching for a node with a specific compatible string:
+static struct dt_node * dt_get_node_by_compatible_from(struct dt * dt, struct dt_node * root,
+	const char * compatible, int index, int * cur_index);
+
 // Prints a device tree node and all its properties and child nodes:
 static void dt_print_node(struct dt_node * node, int indentation_level);
 
@@ -115,6 +119,12 @@ struct dt_node * dt_get_node_by_alias(struct dt * dt, const char * alias)
 	return retval;
 }
 
+struct dt_node * dt_get_node_by_compatible(struct dt * dt, const char * compatible, int index)
+{
+	int counter = 0;
+	return dt_get_node_by_compatible_from(dt, dt->root, compatible, index, &counter);
+}
+
 struct dt_node * dt_get_subnode(struct dt_node * node, const char * name)
 {
 	for(struct dt_node * child = node->children; child != 0; child = child->next)
@@ -182,6 +192,39 @@ static void dt_print_node(struct dt_node * node, int indentation_level)
 
 	for(struct dt_node * child = node->children; child != 0; child = child->next)
 		dt_print_node(child, indentation_level + 1);
+}
+
+static struct dt_node * dt_get_node_by_compatible_from(struct dt * dt, struct dt_node * root,
+	const char * compatible, int index, int * cur_index)
+{
+	struct dt_node * retval = 0;
+	for(struct dt_node * current = root; current != 0; current = current->next)
+	{
+		if(dt_property_exists(current, "compatible"))
+		{
+			const char * v = dt_get_string_property(current, "compatible");
+			if(str_equals(v, compatible))
+			{
+				if(*cur_index == index)
+				{
+					retval = current;
+					break;
+				} else
+					++(*cur_index);
+			}
+		}
+
+		// Check any children of the current node:
+		if(current->children)
+		{
+			retval = dt_get_node_by_compatible_from(dt, current->children,
+				compatible, index, cur_index);
+			if(retval != 0)
+				break;
+		}
+	}
+
+	return retval;
 }
 
 static uint32_t dt_parse_node(struct fdt * fdt, be32 * fdt_node, struct dt_node ** ret)
