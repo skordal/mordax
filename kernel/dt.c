@@ -101,6 +101,20 @@ struct dt_node * dt_get_node_by_phandle(struct dt * dt, dt_phandle phandle)
 	return 0;
 }
 
+struct dt_node * dt_get_node_by_alias(struct dt * dt, const char * alias)
+{
+	struct dt_node * aliases_node = dt_get_node_by_path(dt, "/aliases");
+	if(aliases_node == 0)
+		return 0;
+
+	const char * node_path = dt_get_string_property(aliases_node, alias);
+	if(node_path == 0)
+		return 0;
+
+	struct dt_node * retval = dt_get_node_by_path(dt, node_path);
+	return retval;
+}
+
 struct dt_node * dt_get_subnode(struct dt_node * node, const char * name)
 {
 	for(struct dt_node * child = node->children; child != 0; child = child->next)

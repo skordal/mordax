@@ -66,6 +66,15 @@ struct dt_node * dt_get_node_by_path(struct dt * dt, const char * path);
 struct dt_node * dt_get_node_by_phandle(struct dt * dt, dt_phandle phandle);
 
 /**
+ * Gets a device tree node by its alias. The /aliases node must exist for this
+ * to work.
+ * @param dt the device tree to search in.
+ * @param alias the alias name to look for.
+ * @return the device tree node or 0 if it was not found.
+ */
+struct dt_node * dt_get_node_by_alias(struct dt * dt, const char * alias);
+
+/**
  * Gets the specified subnode of a device tree node.
  * @param node the node to search the children of.
  * @param name name of the node to find.
