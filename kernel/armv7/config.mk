@@ -25,6 +25,7 @@ TARGET_LDSCRIPT := armv7/mordax.ld
 ASSEMBLER_FILES += \
 	armv7/bootstrap.S \
 	armv7/endian.S \
+	armv7/idle_thread.S \
 	armv7/interrupts.S \
 	armv7/log2.S \
 	armv7/memcpy.S \

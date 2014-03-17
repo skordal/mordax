@@ -32,7 +32,7 @@ struct thread * active_thread = 0;
 static struct thread * idle_thread;
 
 // Idle thread loop:
-static void idle_thread_loop(void) __attribute((naked, noreturn));
+extern void idle_thread_loop(void);
 
 bool scheduler_initialize(struct timer_driver * timer, physical_ptr initproc_start,
 	size_t initproc_size)
@@ -197,15 +197,5 @@ pid_t scheduler_allocate_pid(void)
 void scheduler_free_pid(pid_t pid)
 {
 	number_allocator_free_num(pid_allocator, pid + 1);
-}
-
-static void idle_thread_loop(void)
-{
-	asm volatile(
-		"1:\n\t"
-		"wfi\n\t"
-		"b 1b\n\t"
-		:::
-	);
 }
 
