@@ -145,6 +145,11 @@ bootstrap_init_mmu:
 bootstrap_finished:
 	clrex
 
+	@ Enable speculative AXI accesses and caching of NEON data in the L1 cache:
+	mrc p15, 0, r2, c1, c0, 1
+	orr r2, r2, #(1 << ACR_ASA) | (1 << ACR_L1NEON)
+	mcr p15, 0, r2, c1, c0, 1
+
 	@ FIXME: Temporarily use the end of the mapped dataspace as stack.
 	ldr sp, =kernel_dataspace_end
 	ldr sp, [sp]

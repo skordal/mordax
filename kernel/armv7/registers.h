@@ -83,6 +83,16 @@
 #define SCTLR_M		 0
 
 /** @} */
+
+/**
+ * @defgroup acr Auxilliary Control Register (ACR) Defines
+ * @{
+ */
+
+#define ACR_L1NEON	5
+#define ACR_ASA		4
+
+/** @} */
 /** @} */
 
 #endif
