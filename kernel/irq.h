@@ -32,5 +32,13 @@ void irq_register(unsigned irq, irq_handler_func handler);
  */
 void irq_unregister(unsigned irq);
 
+/**
+ * Gets an IRQ handler.
+ * @param irq the number of the IRQ to return the handler for.
+ * @return a pointer to the active handler function or 0 if no
+ *         handler is registered.
+ */
+irq_handler_func irq_get_handler(unsigned irq);
+
 #endif
 

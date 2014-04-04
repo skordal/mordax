@@ -79,3 +79,10 @@ void intc_omap3_unregister_handler(unsigned irq)
 	memory[INTC_OMAP3_MIR_SET(mir_register)] = (1 << (irq % 32));
 }
 
+irq_handler_func intc_omap3_get_handler(unsigned irq)
+{
+	if(irq >= 96)
+		return;
+	return irq_handlers[irq];
+}
+

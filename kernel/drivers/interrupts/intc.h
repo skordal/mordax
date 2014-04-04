@@ -18,8 +18,14 @@ typedef void (*intc_driver_handle_func)(struct thread_context * context);
 /** Function type for registering an IRQ handler. */
 typedef void (*intc_driver_register_func)(unsigned irq, irq_handler_func handler);
 
+/** Function type for retrieveing an IRQ handler. */
+typedef irq_handler_func (*intc_driver_get_handler_func)(unsigned irq);
+
 /** Function type for removing a registered IRQ handler. */
 typedef void (*intc_driver_unregister_func)(unsigned irq);
+
+/** Function type for retrieveing an IRQ handler. */
+typedef irq_handler_func (*intc_driver_get_handler_func)(unsigned irq);
 
 /**
  * Interrupt controller driver structure.
@@ -31,6 +37,7 @@ struct intc_driver
 	intc_driver_handle_func handle_irq;
 	intc_driver_register_func register_handler;
 	intc_driver_unregister_func unregister_handler;
+	intc_driver_get_handler_func get_handler;
 };
 
 /**

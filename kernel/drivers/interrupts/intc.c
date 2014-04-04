@@ -20,6 +20,7 @@ struct intc_driver intc_omap3_driver =
 	.handle_irq = intc_omap3_handle_irq,
 	.register_handler = intc_omap3_register_handler,
 	.unregister_handler = intc_omap3_unregister_handler,
+	.get_handler = intc_omap3_get_handler,
 };
 
 static struct intc_driver_list_entry drivers[] =

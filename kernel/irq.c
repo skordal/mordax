@@ -30,4 +30,8 @@ void irq_unregister(unsigned irq)
 	driver->unregister_handler(irq);
 }
 
+irq_handler_func irq_get_handler(unsigned irq)
+{
+	return driver->get_handler(irq);
+}
 
