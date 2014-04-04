@@ -1,5 +1,5 @@
 // The Mordax Microkernel
-// (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
+// (c) Kristian Klomsten Skordal 2013 - 2014 <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include "irq.h"
@@ -20,9 +20,9 @@ void irq_set_intc_driver(struct intc_driver * d)
 	driver = d;
 }
 
-void irq_register(unsigned irq, irq_handler_func handler)
+void irq_register(unsigned irq, irq_handler_func handler, void * data_ptr)
 {
-	driver->register_handler(irq, handler);
+	driver->register_handler(irq, handler, data_ptr);
 }
 
 void irq_unregister(unsigned irq)

@@ -16,10 +16,7 @@ typedef bool (*intc_driver_init_func)(struct dt_node * device_node);
 typedef void (*intc_driver_handle_func)(struct thread_context * context);
 
 /** Function type for registering an IRQ handler. */
-typedef void (*intc_driver_register_func)(unsigned irq, irq_handler_func handler);
-
-/** Function type for retrieveing an IRQ handler. */
-typedef irq_handler_func (*intc_driver_get_handler_func)(unsigned irq);
+typedef void (*intc_driver_register_func)(unsigned irq, irq_handler_func handler, void * data_ptr);
 
 /** Function type for removing a registered IRQ handler. */
 typedef void (*intc_driver_unregister_func)(unsigned irq);

@@ -9,7 +9,10 @@
 
 static volatile uint32_t * memory;
 
-static irq_handler_func irq_handlers[96];
+static struct {
+	irq_handler_func function;
+	void * data_ptr;
+} irq_handlers[96];
 
 bool intc_omap3_initialize(struct dt_node * device_node)
 {
@@ -28,7 +31,10 @@ bool intc_omap3_initialize(struct dt_node * device_node)
 
 	// While resetting, zero the irq handler array:
 	for(int i = 0; i < 96; ++i)
-		irq_handlers[i] = 0;
+	{
+		irq_handlers[i].function = 0;
+		irq_handlers[i].data_ptr = 0;
+	}
 
 	// Wait until the reset is complete:
 	while(!(memory[INTC_OMAP3_SYSSTATUS] & (1 << INTC_OMAP3_SYSSTATUS_RESETDONE)));
@@ -49,7 +55,7 @@ void intc_omap3_handle_irq(struct thread_context * context)
 	unsigned active_irq = memory[INTC_OMAP3_SIR_IRQ] & INTC_OMAP3_SIR_IRQ_ACTIVEIRQ_MASK;
 
 	// Call the IRQ handler:
-	irq_handlers[active_irq](context, active_irq);
+	irq_handlers[active_irq].function(context, active_irq, irq_handlers[active_irq].data_ptr);
 
 	// Reset interrupt generation:
 	asm volatile("dsb\n\t");
@@ -57,11 +63,13 @@ void intc_omap3_handle_irq(struct thread_context * context)
 	asm volatile("dsb\n\t");
 }
 
-void intc_omap3_register_handler(unsigned irq, irq_handler_func handler)
+void intc_omap3_register_handler(unsigned irq, irq_handler_func handler, void * data_ptr)
 {
 	if(irq >= 96)
 		return;
-	irq_handlers[irq] = handler;
+
+	irq_handlers[irq].function = handler;
+	irq_handlers[irq].data_ptr = data_ptr;
 
 	// Enable the specified IRQ:
 	int mir_register = irq >> 5;	
@@ -72,7 +80,9 @@ void intc_omap3_unregister_handler(unsigned irq)
 {
 	if(irq >= 96)
 		return;
-	irq_handlers[irq] = 0;
+
+	irq_handlers[irq].function = 0;
+	irq_handlers[irq].data_ptr = 0;
 
 	// Disable the specified IRQ:
 	int mir_register = irq >> 5;	
@@ -82,7 +92,7 @@ void intc_omap3_unregister_handler(unsigned irq)
 irq_handler_func intc_omap3_get_handler(unsigned irq)
 {
 	if(irq >= 96)
-		return;
-	return irq_handlers[irq];
+		return 0;
+	return irq_handlers[irq].function;
 }
 

@@ -1,5 +1,5 @@
 // The Mordax Microkernel
-// (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
+// (c) Kristian Klomsten Skordal 2013 - 2014 <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #ifndef MORDAX_DRIVERS_TIMER_TIMER_OMAP3_H

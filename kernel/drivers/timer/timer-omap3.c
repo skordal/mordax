@@ -1,5 +1,5 @@
 // The Mordax Microkernel
-// (c) Kristian Klomsten Skordal 2013 <kristian.skordal@gmail.com>
+// (c) Kristian Klomsten Skordal 2013 - 2014 <kristian.skordal@gmail.com>
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include <debug.h>
@@ -16,7 +16,7 @@ static timer_callback_func callback;
 
 // IRQ handler for the timer driver; the interrupt number is retrieved
 // from the device tree when initializing.
-static void timer_omap3_irq_handler(struct thread_context * context, unsigned irq);
+static void timer_omap3_irq_handler(struct thread_context * context, unsigned irq, void * data_ptr);
 
 bool timer_omap3_initialize(struct dt_node * device_node)
 {
@@ -45,7 +45,7 @@ bool timer_omap3_initialize(struct dt_node * device_node)
 	}
 
 	// Register the interrupt handler (unmasks the interrupt):
-	irq_register(irq_number, timer_omap3_irq_handler);
+	irq_register(irq_number, timer_omap3_irq_handler, 0);
 
 	return true;
 }
@@ -80,7 +80,7 @@ void timer_omap3_stop(void)
 	memory[TIMER_OMAP3_TCLR] &= ~(1 << TIMER_OMAP3_ST);
 }
 
-static void timer_omap3_irq_handler(struct thread_context * context, unsigned irq)
+static void timer_omap3_irq_handler(struct thread_context * context, unsigned irq, void * data_ptr)
 {
 	if(callback != 0)
 		callback();
