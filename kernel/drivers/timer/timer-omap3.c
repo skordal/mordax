@@ -44,8 +44,9 @@ bool timer_omap3_initialize(struct dt_node * device_node)
 			device_node->name);
 	}
 
-	// Register the interrupt handler (unmasks the interrupt):
+	// Register and enable the interrupt handler:
 	irq_register(irq_number, timer_omap3_irq_handler, 0);
+	irq_enable(irq_number);
 
 	return true;
 }

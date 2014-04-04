@@ -44,6 +44,8 @@ bool intc_omap3_initialize(struct dt_node * device_node);
 void intc_omap3_handle_irq(struct thread_context * context);
 void intc_omap3_register_handler(unsigned irq, irq_handler_func handler, void * data_ptr);
 void intc_omap3_unregister_handler(unsigned irq);
+void intc_omap3_enable_irq(unsigned irq);
+void intc_omap3_disable_irq(unsigned irq);
 irq_handler_func intc_omap3_get_handler(unsigned irq);
 
 #endif

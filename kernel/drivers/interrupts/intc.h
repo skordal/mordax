@@ -21,6 +21,12 @@ typedef void (*intc_driver_register_func)(unsigned irq, irq_handler_func handler
 /** Function type for removing a registered IRQ handler. */
 typedef void (*intc_driver_unregister_func)(unsigned irq);
 
+/** Function type for enabling an IRQ handler. */
+typedef void (*intc_driver_enable_irq_func)(unsigned irq);
+
+/** Function type for disabling an IRQ handler. */
+typedef void (*intc_driver_disable_irq_func)(unsigned irq);
+
 /** Function type for retrieveing an IRQ handler. */
 typedef irq_handler_func (*intc_driver_get_handler_func)(unsigned irq);
 
@@ -35,6 +41,8 @@ struct intc_driver
 	intc_driver_register_func register_handler;
 	intc_driver_unregister_func unregister_handler;
 	intc_driver_get_handler_func get_handler;
+	intc_driver_enable_irq_func enable_irq;
+	intc_driver_disable_irq_func disable_irq;
 };
 
 /**

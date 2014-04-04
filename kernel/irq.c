@@ -30,6 +30,16 @@ void irq_unregister(unsigned irq)
 	driver->unregister_handler(irq);
 }
 
+void irq_enable(unsigned irq)
+{
+	driver->enable_irq(irq);
+}
+
+void irq_disable(unsigned irq)
+{
+	driver->disable_irq(irq);
+}
+
 irq_handler_func irq_get_handler(unsigned irq)
 {
 	return driver->get_handler(irq);

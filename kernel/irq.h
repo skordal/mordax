@@ -13,8 +13,6 @@ struct thread_context;
 /** IRQ handler function. */
 typedef void (*irq_handler_func)(struct thread_context * context, unsigned irq, void * data_ptr);
 
-// Driver structure forward-declaration:
-struct intc_driver;
 
 /**
  * Sets the driver to use for the interrupt controller.
@@ -23,9 +21,11 @@ struct intc_driver;
 void irq_set_intc_driver(struct intc_driver * driver);
 
 /**
- * Registers an IRQ handler.
+ * Registers an IRQ handler. The IRQ must be enabled with
+ * `irq_enable` before the handler can be called.
  * @param irq the number of the irq to handle.
  * @param handler pointer to the IRQ handling function.
+ * @param data_ptr a pointer that is passed to the handler when it is called.
  */
 void irq_register(unsigned irq, irq_handler_func handler, void * data_ptr);
 
@@ -34,6 +34,18 @@ void irq_register(unsigned irq, irq_handler_func handler, void * data_ptr);
  * @param irq the number for the IRQ which handler to remove.
  */
 void irq_unregister(unsigned irq);
+
+/**
+ * Enables in IRQ.
+ * @param irq the IRQ to enable.
+ */
+void irq_enable(unsigned irq);
+
+/**
+ * Disables an IRQ.
+ * @param irq the IRQ to disable.
+ */
+void irq_disable(unsigned irq);
 
 /**
  * Gets an IRQ handler.
