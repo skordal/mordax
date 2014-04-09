@@ -7,9 +7,6 @@
 
 #include "mm.h"
 
-// Initializes the POSIX threads implementation:
-void __pthreads_initialize(void);
-
 // Clears the .bss section of the executable:
 static void clear_bss(void)
 {

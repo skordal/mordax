@@ -2,7 +2,7 @@
 # (c) Kristian Klomsten Skordal 2014 <kristian.skordal@gmail.com>
 # Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
-.PHONY: all clean pthreads link-common clean-common
+.PHONY: all clean link-common clean-common
 ifeq ($(TOPLEVEL),)
         $(error "Please run make from the toplevel directory.")
 endif
@@ -16,18 +16,21 @@ SOURCE_FILES += \
 	initialize.c \
 	memcpy.c \
 	memset.c \
-	mm.c
+	mm.c \
+	printf.c
 OBJECT_FILES := $(ASSEMBLER_FILES:.S=.o) $(SOURCE_FILES:.c=.o)
 
-TARGET_CFLAGS  += -I$(TARGET_INCLUDEDIR) -Ipthread -isystem $(TOPLEVEL)/libraries/libc/include
+TARGET_CFLAGS  += -isystem $(TOPLEVEL)/libraries/libc/include -I$(TARGET_INCLUDEDIR)
 TARGET_ASFLAGS += -I$(TARGET_INCLUDEDIR)
 
 # Modules imported from common:
 COMMON_MODULES := rbtree
 COMMON_OBJECTS := $(foreach module,$(COMMON_MODULES),$(module).o)
 
-all: link-common pthreads $(COMMON_OBJECTS) $(OBJECT_FILES)
-	$(TARGET_AR) rcs libc.a $(OBJECT_FILES) $(COMMON_OBJECTS) pthread/libpthread.a
+all: link-common libc.a
+
+libc.a: $(COMMON_OBJECTS) $(OBJECT_FILES)
+	$(TARGET_AR) rcs libc.a $@ $^
 
 clean: clean-common clean-pthreads
 	-$(RM) $(OBJECT_FILES) $(COMMON_OBJECTS) libc.a
@@ -39,12 +42,6 @@ install:
 	$(CP) -u include/*.h $(TARGET_INCLUDEDIR)
 	$(TEST) -d $(TARGET_INCLUDEDIR)/sys || $(MKDIR) -p $(TARGET_INCLUDEDIR)/sys
 	$(CP) -u include/sys/* $(TARGET_INCLUDEDIR)/sys
-
-pthreads:
-	@$(MAKE) -C pthread all install
-
-clean-pthreads:
-	@$(MAKE) -C pthread clean
 
 link-common:
 	for module in $(COMMON_MODULES); do \
