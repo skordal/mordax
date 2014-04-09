@@ -144,6 +144,7 @@ static bool write_output_exec(FILE * output_file, const char * filename)
 	char * basename_temp = strdup(filename);
 	char * invocation_name = basename(basename_temp);
 	strncpy(header.name, invocation_name, 16);
+	header.name[15] = 0;
 	free(basename_temp);
 
 	uint32_t offset = 0; // Offset in the output file from the executable header.
