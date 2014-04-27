@@ -16,6 +16,6 @@ export TARGET_OBJCOPY ?= $(TARGET_PREFIX)-objcopy
 
 # Target-dependent build flags:
 export TARGET_ASFLAGS  += -mno-unaligned-access -Wall -O2
-export TARGET_CFLAGS   += -mno-unaligned-access -std=gnu11 -Wall -O2
+export TARGET_CFLAGS   += -mno-unaligned-access -std=gnu11 -Wall -O2 -fomit-frame-pointer
 export TARGET_LDFLAGS  += 
 
