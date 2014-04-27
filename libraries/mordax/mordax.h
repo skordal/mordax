@@ -64,9 +64,9 @@ pid_t mordax_process_create(struct mordax_process_info * procinfo);
 
 /**
  * Maps a physical memory address into a process' virtual memory space.
- * If the physical memory is part of the memory managed by the memory,
- * this system call fails. It is, however, possible to map physical
- * memory that is already mapped by other processes. The consequences
+ * If the physical memory is part of the memory managed by the physical
+ * memory manager, this system call fails. It is, however, possible to map
+ * physical memory that is already mapped by other processes. The consequences
  * of doing so may, however, not be pleasant.
  *
  * The page at address 0x00000000 is holy and cannot be the target of
