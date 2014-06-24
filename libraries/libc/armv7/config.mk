@@ -8,6 +8,7 @@ TARGET_ASFLAGS += -mfpu=neon -mcpu=cortex-a8
 
 # ARMv7 specific source files:
 ASSEMBLER_FILES += \
-	armv7/crt0.S
+	armv7/crt0.S \
+	armv7/uidiv.S
 SOURCE_FILES    +=
 
