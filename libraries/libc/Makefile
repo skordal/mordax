@@ -17,7 +17,8 @@ SOURCE_FILES += \
 	memcpy.c \
 	memset.c \
 	mm.c \
-	printf.c
+	printf.c \
+	strcmp.c
 OBJECT_FILES := $(ASSEMBLER_FILES:.S=.o) $(SOURCE_FILES:.c=.o)
 
 TARGET_CFLAGS  += -isystem $(TOPLEVEL)/libraries/libc/include -I$(TARGET_INCLUDEDIR)
