@@ -32,7 +32,7 @@ all: link-common libc.a
 libc.a: $(COMMON_OBJECTS) $(OBJECT_FILES)
 	$(TARGET_AR) rcs libc.a $@ $^
 
-clean: clean-common clean-pthreads
+clean: clean-common
 	-$(RM) $(OBJECT_FILES) $(COMMON_OBJECTS) libc.a
 
 install:
