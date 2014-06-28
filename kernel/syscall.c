@@ -5,6 +5,7 @@
 #include "context.h"
 #include "debug.h"
 #include "dt.h"
+#include "irq.h"
 #include "kernel.h"
 #include "lock.h"
 #include "mm.h"
@@ -107,6 +108,13 @@ void syscall_interrupt_handler(struct thread_context * context, uint8_t syscall)
 			break;
 		case MORDAX_SYSCALL_DT_GET_PROPERTY_PHANDLE:
 			syscall_dt_get_property_phandle(context);
+			break;
+
+		case MORDAX_SYSCALL_IRQ_CREATE:
+			syscall_irq_create(context);
+			break;
+		case MORDAX_SYSCALL_IRQ_LISTEN:
+			syscall_irq_listen(context);
 			break;
 
 		case MORDAX_SYSCALL_RESOURCE_DESTROY:
@@ -895,6 +903,59 @@ void syscall_dt_get_property_phandle(struct thread_context * context)
 	mm_free(real_name);
 }
 
+void syscall_irq_create(struct thread_context * context)
+{
+	unsigned irq = (unsigned) context_get_syscall_argument(context, 0);
+
+	if((active_process->permissions & MORDAX_PROCESS_PERMISSION_IRQ) == 0)
+	{
+		context_set_syscall_retval(context, (void *) -EPERM);
+		return;
+	}
+
+	if(irq_get_handler(irq) != 0)
+	{
+		context_set_syscall_retval(context, (void *) -EBUSY);
+		return;
+	} else {
+		struct irq_object * object = irq_object_create(irq);
+		int retval = process_add_resource(active_process, PROCESS_RESOURCE_IRQ,
+			object);
+		context_set_syscall_retval(context, (void *) retval);
+	}
+}
+
+void syscall_irq_listen(struct thread_context * context)
+{
+	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
+	debug_printf("PID %d, TID %d wants to listen on IRQ resource %d\n",
+		active_process->pid, active_thread->tid, identifier);
+
+	if((active_process->permissions & MORDAX_PROCESS_PERMISSION_IRQ) == 0)
+	{
+		context_set_syscall_retval(context, (void *) -EPERM);
+		return;
+	}
+
+	enum process_resource_type restype;
+	struct irq_object * resource = process_get_resource(active_process, identifier,
+		&restype);
+	if(restype != PROCESS_RESOURCE_IRQ || resource == 0)
+	{
+		context_set_syscall_retval(context, (void *) -EINVAL);
+		return;
+	}
+
+	bool blocking = false;
+	int r = irq_object_listen(resource, active_thread, &blocking);
+	if(blocking)
+	{
+		scheduler_move_thread_to_blocking(active_thread);
+		scheduler_reschedule();
+	} else
+		context_set_syscall_retval(context, (void *) r);
+}
+
 void syscall_resource_destroy(struct thread_context * context)
 {
 	mordax_resource_t identifier = (mordax_resource_t) context_get_syscall_argument(context, 0);
@@ -918,11 +979,13 @@ void syscall_resource_destroy(struct thread_context * context)
 		case PROCESS_RESOURCE_LOCK:
 			lock_destroy(res);
 			break;
+		case PROCESS_RESOURCE_IRQ:
+			irq_object_destroy(res);
+			break;
 		default:
 			context_set_syscall_retval(context, (void *) -EINVAL);
 	}
 
-	debug_printf("Service removed\n");
 	context_set_syscall_retval(context, (void *) 0);
 }
 

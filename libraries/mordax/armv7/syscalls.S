@@ -50,5 +50,8 @@ syscall_wrapper mordax_dt_get_property_array32, #MORDAX_SYSCALL_DT_GET_PROPERTY_
 syscall_wrapper mordax_dt_get_property_string, #MORDAX_SYSCALL_DT_GET_PROPERTY_STRING
 syscall_wrapper mordax_dt_get_property_phandle, #MORDAX_SYSCALL_DT_GET_PROPERTY_PHANDLE
 
+syscall_wrapper mordax_irq_create, #MORDAX_SYSCALL_IRQ_CREATE
+syscall_wrapper mordax_irq_listen, #MORDAX_SYSCALL_IRQ_LISTEN
+
 syscall_wrapper mordax_resource_destroy, #MORDAX_SYSCALL_RESOURCE_DESTROY
 

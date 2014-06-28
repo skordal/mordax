@@ -195,6 +195,18 @@ void syscall_dt_get_property_string(struct thread_context * context);
  */
 void syscall_dt_get_property_phandle(struct thread_context * context);
 
+/**
+ * Creates an IRQ object. Takes one parameter, the number of the IRQ.
+ * If successful, 0 is returned, otherwise a negative error code is returned.
+ */
+void syscall_irq_create(struct thread_context * context);
+
+/**
+ * Listens on an IRQ object. Takes one parameter, the handle of the IRQ object.
+ * If the IRQ is asserted, 0 is returned. Otherwise, a negative error code is
+ * returned.
+ */
+void syscall_irq_listen(struct thread_context * context);
 
 /**
  * Frees and destroys a resource. Takes the identifier of the resource

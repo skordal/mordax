@@ -20,6 +20,8 @@
 #define MORDAX_PROCESS_PERMISSION_SERVICE	(1 << 2)
 /** Permission bit allowing processes to create and manage locks. */
 #define MORDAX_PROCESS_PERMISSION_LOCKS		(1 << 3)
+/** Permission bit allowing processes to use IRQ objects. */
+#define MORDAX_PROCESS_PERMISSION_IRQ		(1 << 4)
 
 /**
  * Permission bit specifying that all permissions should be inherited from

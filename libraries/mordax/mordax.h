@@ -131,6 +131,20 @@ int mordax_lock_aquire(mordax_resource_t lock);
 int mordax_lock_release(mordax_resource_t lock);
 
 /**
+ * Creates an IRQ resource.
+ * @param irq the irq to create a resource for.
+ * @return the identifier of the IRQ resource.
+ */
+mordax_resource_t mordax_irq_create(unsigned irq);
+
+/**
+ * Listens on an IRQ resource.
+ * @param irq the IRQ resource to listen on.
+ * @return 0 if successful, otherwise a negative error code.
+ */
+int mordax_irq_listen(mordax_resource_t irq);
+
+/**
  * Frees a resource.
  * @param identifier the resource identifier.
  */

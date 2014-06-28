@@ -3,6 +3,7 @@
 // Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 #include "debug.h"
+#include "irq.h"
 #include "kernel.h"
 #include "lock.h"
 #include "mm.h"
@@ -200,6 +201,9 @@ static void free_resource(void * data)
 		case PROCESS_RESOURCE_DT_NODE:
 			// DT nodes are a direct part of the kernel DT and
 			// cannot be freed.
+			break;
+		case PROCESS_RESOURCE_IRQ:
+			irq_object_destroy(res->resource_ptr);
 			break;
 		default:
 			break;

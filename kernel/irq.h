@@ -13,6 +13,15 @@ struct thread_context;
 /** IRQ handler function. */
 typedef void (*irq_handler_func)(struct thread_context * context, unsigned irq, void * data_ptr);
 
+/**
+ * IRQ object.
+ * This is used by processes to listen for IRQ events.
+ */
+struct irq_object
+{
+	unsigned irq;
+	struct thread * listener;
+};
 
 /**
  * Sets the driver to use for the interrupt controller.
@@ -54,6 +63,32 @@ void irq_disable(unsigned irq);
  *         handler is registered.
  */
 irq_handler_func irq_get_handler(unsigned irq);
+
+/**
+ * Creates an IRQ object.
+ * @param irq the irq number for which to create the object.
+ * @return a pointer to the new IRQ object or 0 if the object could
+ *         not be created, such as when a handler is already
+ *         registered for the specified IRQ.
+ */
+struct irq_object * irq_object_create(unsigned irq)
+	__attribute((malloc));
+
+/**
+ * Destroys an IRQ object.
+ * @param object a pointer to the IRQ object to destroy.
+ */
+void irq_object_destroy(struct irq_object * object);
+
+/**
+ * Sets a thread as listener on an IRQ object.
+ * @param object IRQ object to listen on.
+ * @param listener listening thread
+ * @param block pointer to a variable that is set to `true` if the listener thread
+ *              should be moved to the blocking queue.
+ * @return 0 if successful or a negative error code on failure.
+ */
+int irq_object_listen(struct irq_object * object, struct thread * listener, bool * blocking);
 
 #endif
 
