@@ -23,6 +23,7 @@ struct memory_block
 extern void * __application_end;
 static void * program_break;
 static unsigned int free_memory;
+static mordax_resource_t lock;
 
 // Set the first memory block to be at the beginning of free memory:
 static struct memory_block * first_block = (struct memory_block *) &__application_end;
@@ -34,6 +35,7 @@ void __mm_initialize(void)
 {
 	program_break = (void *) (((uint32_t) &__application_end + 4095) & -4096);
 	free_memory = (uint32_t) program_break - (uint32_t) __application_end;
+	lock = mordax_lock_create();
 
 	// FIXME: The following code assumes there is enough memory for the first block.
 	memset(first_block, 0, sizeof(struct memory_block));
@@ -51,15 +53,16 @@ void * sbrk(size_t incr)
 	incr = (incr + 4095) & -4096;
 
 	struct mordax_memory_attributes attributes = {
-		.type = MORDAX_TYPE_CODE,
+		.type = MORDAX_TYPE_DATA,
 		.permissions = MORDAX_PERM_RW_RW
 	};
 
 	// Increase the dataspace in page-sized intervals:
+	mordax_lock_aquire(lock);
 	for(int i = 0; i < incr / 4096; ++i)
 	{
-		void * target = program_break;
-		size_t size = 4096;
+		const void * target = program_break;
+		const size_t size = 4096;
 		mordax_memory_map_alloc(program_break, &size, &attributes);
 
 		program_break = (void *) ((uint32_t) target + size);
@@ -75,12 +78,17 @@ void * sbrk(size_t incr)
 		struct memory_block * new_block = (void *) ((uint32_t) last_block + sizeof(struct memory_block) + last_block->size);
 		new_block->used = false;
 		new_block->size = incr - sizeof(struct memory_block);
+		new_block->next = NULL;
+		free_memory += incr - sizeof(struct memory_block);
 
 		last_block->next = new_block;
 		new_block->prev = last_block;
-	} else
+	} else {
 		last_block->size += incr;
+		free_memory += incr;
+	}
 
+	mordax_lock_release(lock);
 	return program_break;
 }
 
@@ -92,7 +100,9 @@ void * malloc(size_t size)
 
 	// Make size a multiple of 4:
 	size = (size + 3) & -4;
-	
+
+	mordax_lock_aquire(lock);
+
 	if(size > free_memory)
 		sbrk(size + sizeof(struct memory_block));
 
@@ -104,8 +114,9 @@ _malloc_retry:
 		{
 			retval = (void *) ((uint32_t) current + sizeof(struct memory_block));
 			current->used = true;
-			if(current->size > size)
+			if(current->size > size && current->size - size >= MINIMUM_BLOCKSIZE)
 				split_block(current, size);
+			free_memory -= current->size;
 			break;
 		}
 
@@ -120,11 +131,15 @@ _malloc_retry:
 
 	if(retval == NULL)
 		errno = ENOMEM;
+
+	mordax_lock_release(lock);
 	return retval;
 }
 
 void free(void * ptr)
 {
+	mordax_lock_aquire(lock);
+
 	struct memory_block * block = (void *) ((uint32_t) ptr - sizeof(struct memory_block));
 	block->used = false;
 
@@ -145,6 +160,8 @@ void free(void * ptr)
 		block->prev->next = block->next;
 		block = block->prev;
 	}
+
+	mordax_lock_release(lock);
 }
 
 static void split_block(struct memory_block * block, unsigned offset)
