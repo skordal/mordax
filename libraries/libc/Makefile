@@ -17,6 +17,7 @@ SOURCE_FILES += \
 	memcpy.c \
 	memset.c \
 	mm.c \
+	printf.c \
 	strcmp.c \
 	strlen.c
 OBJECT_FILES := $(ASSEMBLER_FILES:.S=.o) $(SOURCE_FILES:.c=.o)
