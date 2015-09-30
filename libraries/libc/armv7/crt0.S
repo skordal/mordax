@@ -13,7 +13,8 @@
 @ argv.
 .global _start
 _start:
-	bl __initialize
+	@ Initialize the C library:
+	bl __libc_initialize
 
 	@ The the address of the top of the stack:
 	mov r0, #MORDAX_SYSTEM_GETSPLIT
@@ -21,7 +22,8 @@ _start:
 
 	cmp sp, r0
 
-	@ Load argc and argv from the stack unless the stack pointer points to the absolute top of the stack:
+	@ Load argc and argv from the stack unless the stack pointer points to the
+	@ absolute top of the stack on entry:
 	ittee ne
 	ldrne r0, [sp, #-8] @ Load argc
 	ldrne r1, [sp, #-4] @ Load argv
@@ -31,5 +33,9 @@ _start:
 	@ Start main:
 	bl main
 
+	@ Finalize the C library:
+	bl __libc_finalize
+
+	@ Exit the thread:
 	b mordax_thread_exit
 

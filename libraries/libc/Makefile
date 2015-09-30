@@ -13,6 +13,7 @@ include $(ARCH)/config.mk
 ASSEMBLER_FILES +=
 SOURCE_FILES += \
 	errno.c \
+	finalize.c \
 	initialize.c \
 	memcpy.c \
 	memset.c \

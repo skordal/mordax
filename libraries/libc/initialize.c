@@ -16,7 +16,7 @@ static void clear_bss(void)
 }
 
 // Initializes the standard library:
-void __initialize(void)
+void __libc_initialize(void)
 {
 	clear_bss();
 	__mm_initialize();
