@@ -42,6 +42,9 @@ interrupts_initialize:
 int_undefined_instruction:
 	store_context
 
+	mov r0, sp
+	bl undef_interrupt_handler
+
 	restore_context
 	movs pc, lr
 

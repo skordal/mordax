@@ -33,6 +33,7 @@ SOURCE_FILES += \
 	socket.c \
 	syscall.c \
 	thread.c \
+	undef.c \
 	utils.c
 
 # Include build configuration files for the drivers:
