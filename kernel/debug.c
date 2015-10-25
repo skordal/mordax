@@ -89,8 +89,14 @@ static void debug_putc(char c)
 
 static void debug_putd(int n)
 {
-	static char buffer[10];
-	bool inside_num = false;
+	bool leading = true;
+
+	// If the input number is 0, just print 0 and return:
+	if(n == 0)
+	{
+		debug_putc('0');
+		return;
+	}
 
 	// If the number is negative, print a minus sign and convert it to
 	// a positive number:
@@ -100,22 +106,16 @@ static void debug_putd(int n)
 		debug_putc('-');
 	}
 
-	for(int i = 0; i < 10; ++i)
-		buffer[i] = '0';
-
-	for(int i = 9; i >= 0; --i)
+	for(unsigned int i = 1000000000; i > 0; i /= 10)
 	{
-		buffer[i] = '0' + (n % 10);
-		n /= 10;
-	}
-
-	for(int i = 0; i < 10; ++i)
-	{
-		// Do not print leading zeroes:
-		if(!inside_num && buffer[i] == '0' && i != 9)
-			continue;
-		inside_num = true;
-		debug_putc(buffer[i]);
+		if(n / i == 0 && !leading)
+			debug_putc('0');
+		else if(n / i != 0)
+		{
+			debug_putc('0' + (n / i));
+			n %= i;
+			leading = false;
+		}
 	}
 }
 
