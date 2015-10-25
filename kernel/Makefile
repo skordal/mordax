@@ -19,18 +19,20 @@ COMMON_MODULES := queue rbtree stack
 COMMON_OBJECTS := $(foreach module,$(COMMON_MODULES),$(module).o)
 
 all: $(COMMON_OBJECTS) $(OBJECT_FILES)
-	$(TARGET_LD) $(TARGET_LDFLAGS) -T $(TARGET_LDSCRIPT) -Map mordax.map -o mordax.elf \
-		$(OBJECT_FILES) $(COMMON_OBJECTS)
+	$(TARGET_LD) -T $(TARGET_LDSCRIPT) -Wl,-Map,mordax.map -o mordax.elf \
+		$(OBJECT_FILES) $(COMMON_OBJECTS) $(TARGET_LDFLAGS)
+	$(TARGET_SIZE) mordax.elf > mordax.size
 	$(CP) $(TOPLEVEL)/$(KERNEL_INITPROC) init.bin
 	$(TARGET_OBJCOPY) -O binary -j .init -j .text -j .data \
 		mordax.elf mordax.bin
 	$(GZIP) -qf9 mordax.bin
 	$(DTC) -O dtb -o mordax.dtb $(DTS_FILE)
-	$(MKIMAGE) -f mordax.its mordax.itb
+	$(MKIMAGE) -f mordax.its mordax.itb > /dev/null
+	$(CAT) mordax.size
 
 clean: clean-common
-	-$(RM) $(ASSEMBLER_FILES:.S=.o)
-	-$(RM) $(SOURCE_FILES:.c=.o)
+	-$(RM) $(OBJECT_FILES)
+	-$(RM) $(COMMON_OBJECTS)
 	-$(RM) mordax.elf mordax.bin mordax.bin.gz mordax.dtb mordax.itb
 
 link-common:

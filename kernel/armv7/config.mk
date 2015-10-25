@@ -27,9 +27,7 @@ ASSEMBLER_FILES += \
 	armv7/endian.S \
 	armv7/idle_thread.S \
 	armv7/interrupts.S \
-	armv7/log2.S \
-	armv7/memcpy.S \
-	armv7/uidiv.S
+	armv7/log2.S
 SOURCE_FILES += \
 	armv7/abort.c \
 	armv7/context.c \

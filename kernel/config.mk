@@ -3,6 +3,7 @@
 # Report bugs and issues on <http://github.com/skordal/mordax/issues>
 
 # Target independent build tools:
+CAT     ?= cat
 DTC     ?= dtc
 GZIP    ?= gzip
 MAKE    ?= make
@@ -15,7 +16,7 @@ TARGET_ASFLAGS += -Wall -g -O2 -ffreestanding -std=gnu11 -I$(TOPLEVEL)/kernel \
 TARGET_CFLAGS  += -Wall -g -O2 -ffreestanding -std=gnu11 -I$(TOPLEVEL)/kernel \
 	-I$(TOPLEVEL)/kernel/api -Werror=implicit-function-declaration \
 	-DCOMPILING_KERNEL
-TARGET_LDFLAGS += -nostdlib
+TARGET_LDFLAGS += -nostdlib -lgcc
 
 # Target independent source files:
 SOURCE_FILES += \
